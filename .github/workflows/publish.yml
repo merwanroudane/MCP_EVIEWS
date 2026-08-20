@@ -1,0 +1,94 @@
+name: Publish to PyPI
+
+# Publishing runs when a GitHub Release is published, so the tag, the release
+# notes and the uploaded files always describe the same commit.
+#
+# No API token is stored anywhere. PyPI verifies a short-lived OIDC identity
+# issued by GitHub for this repository and this workflow, which is what
+# "Trusted Publishing" means. Before the first run, add the publisher on PyPI:
+#
+#   PyPI -> your project -> Manage -> Publishing -> Add a new publisher
+#     Owner:            merwanroudane
+#     Repository:       MCP_EVIEWS
+#     Workflow name:    publish.yml
+#     Environment name: pypi
+#
+# The environment name below must match the one entered there.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade build twine
+
+      - name: Check the tag matches the packaged version
+        if: github.event_name == 'release'
+        run: |
+          set -euo pipefail
+          packaged=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          tagged="${GITHUB_REF_NAME#v}"
+          echo "pyproject: $packaged   tag: $tagged"
+          if [ "$packaged" != "$tagged" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match version $packaged in pyproject.toml"
+            exit 1
+          fi
+
+      - name: Build
+        run: python -m build
+
+      - name: Check metadata renders on PyPI
+        run: python -m twine check dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+  test:
+    name: Offline tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The live suites drive a real EViews installation over Windows COM and
+      # cannot run here. The offline suite covers the parsing and formatting.
+      - name: Run the offline suite
+        run: python tests/test_offline.py
+
+  publish:
+    name: Upload to PyPI
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/eviews-mcp/
+    permissions:
+      id-token: write  # required to mint the OIDC token PyPI checks
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1

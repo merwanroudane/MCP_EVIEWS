@@ -435,7 +435,7 @@
     <p class="byline">Created and maintained by <strong>Dr Merwan Roudane</strong></p>
 
     <div class="pills">
-      <a class="pill" href="https://pypi.org/project/eviews-mcp/"><b>PyPI</b> v1.2.0</a>
+      <a class="pill" href="https://pypi.org/project/eviews-mcp/"><b>PyPI</b> <span id="pypi-version">v1.3.0</span></a>
       <span class="pill"><b>Licence</b> MIT</span>
       <span class="pill"><b>Python</b> 3.10+</span>
       <span class="pill"><b>Platform</b> Windows</span>
@@ -1159,5 +1159,22 @@ eviews-mcp interface (Roudane, 2026).</pre>
   </div>
 </footer>
 
+
+<script>
+  // The published version, read from PyPI rather than kept in sync by hand.
+  // The markup already carries the last known release, so a blocked or failed
+  // request simply leaves that in place.
+  (function () {
+    var slot = document.getElementById("pypi-version");
+    if (!slot || !window.fetch) return;
+    fetch("https://pypi.org/pypi/eviews-mcp/json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        var v = data && data.info && data.info.version;
+        if (v) slot.textContent = "v" + v;
+      })
+      .catch(function () { /* keep the value already in the markup */ });
+  })();
+</script>
 </body>
 </html>
