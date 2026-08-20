@@ -66,3 +66,27 @@ jobs:
       - run: python -m pip install --upgrade build twine
       - run: python -m build
       - run: python -m twine check dist/*
+
+  server-imports:
+    name: Server imports from the built wheel
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: python -m pip install --upgrade build
+      - run: python -m build --wheel
+
+      # Installing the wheel resolves the real dependency ranges, which is how
+      # the mcp 2.0 break reached users: the package imports lazily and looked
+      # fine, while the server module -- the thing the client actually runs --
+      # could not import at all.
+      - name: Install the wheel and import the server
+        shell: bash
+        run: |
+          python -m pip install --upgrade "$(ls dist/*.whl)"
+          python -c "import importlib.metadata as md; print('mcp', md.version('mcp'))"
+          python -c "import eviews_mcp.server as s; print('tools:', len(s.mcp._tool_manager.list_tools()))"

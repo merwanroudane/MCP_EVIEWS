@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.3
+
+### Fixed
+- **The server could not start on a fresh install.** The MCP SDK dependency was
+  declared as `mcp[cli]>=1.2.0` with no upper bound, and 2.0.0 removed
+  `mcp.server.fastmcp`, which this server is built on. Any install that resolved
+  to 2.x failed with `ModuleNotFoundError: No module named 'mcp.server.fastmcp'`
+  before a single tool could run. The requirement is now `>=1.2.0,<2`.
+
+### Added
+- A CI job that installs the built wheel and imports `eviews_mcp.server`. The
+  earlier clean-install check imported the package rather than the server, and
+  the package's lazy `__init__` imports cleanly on its own -- so the break was
+  invisible to it. The job checks the module the client actually loads.
+
 ## 1.3.2
 
 ### Added
