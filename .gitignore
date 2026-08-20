@@ -23,3 +23,6 @@ venv/
 *.eps
 phillips_residuals.*
 lib_graph.*
+
+# stata-mcp writes its do-files and logs beside the working directory
+.statamcp/
