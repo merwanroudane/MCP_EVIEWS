@@ -13,7 +13,7 @@ Two things in one package:
 Built and tested against **EViews 13** on Windows; EViews 10–14 resolve
 correctly through the same COM interface.
 
-> **New to this?** The [**EViews Researcher Guide**](docs/EViews-Researcher-Guide.md)
+> **New to this?** The [**EViews Researcher Guide**](https://github.com/merwanroudane/MCP_EVIEWS/blob/main/docs/EViews-Researcher-Guide.md)
 > takes you from a clean machine to a finished ARDL study, with every command and
 > every output verified against a real EViews session. No Python knowledge assumed.
 
