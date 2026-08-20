@@ -1,7 +1,17 @@
 # eviews-mcp
 
+[![PyPI](https://img.shields.io/pypi/v/eviews-mcp?color=2c5f9e&label=PyPI)](https://pypi.org/project/eviews-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/eviews-mcp?color=2c5f9e)](https://pypi.org/project/eviews-mcp/)
+[![Licence](https://img.shields.io/badge/licence-MIT-2c5f9e)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows-2c5f9e)](https://pypi.org/project/eviews-mcp/)
+[![EViews](https://img.shields.io/badge/EViews-10--14-c05621)](https://www.eviews.com)
+
 Drive **EViews** from Python, and expose it to LLM clients over the Model
 Context Protocol.
+
+**[Documentation site](https://merwanroudane.github.io/MCP_EVIEWS/)** &nbsp;·&nbsp;
+**[Researcher guide](https://github.com/merwanroudane/MCP_EVIEWS/blob/main/docs/EViews-Researcher-Guide.md)** &nbsp;·&nbsp;
+**[PyPI](https://pypi.org/project/eviews-mcp/)**
 
 Two things in one package:
 
@@ -20,13 +30,13 @@ correctly through the same COM interface.
 ## Install
 
 ```bash
-pip install git+https://github.com/merwanroudane/MCP_EVIEWS.git
+pip install eviews-mcp
 ```
 
 With pandas support:
 
 ```bash
-pip install "eviews-mcp[pandas] @ git+https://github.com/merwanroudane/MCP_EVIEWS.git"
+pip install "eviews-mcp[pandas]"
 ```
 
 Or from a clone, for development:

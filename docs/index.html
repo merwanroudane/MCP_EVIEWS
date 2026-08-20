@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eviews-mcp — Drive EViews from Python and AI assistants</title>
+<meta name="description" content="An MCP server and Python library that drives EViews 13 econometric software. By Dr Merwan Roudane.">
+<meta name="author" content="Dr Merwan Roudane">
+<meta name="color-scheme" content="light">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
+<style>
+  /* Deliberately a single light theme: EViews output is white-ground, and the
+     plots on this page are real EViews exports, so a dark surface would fight
+     the artwork it frames. Every colour is painted explicitly. */
+  :root {
+    --ground:      #ffffff;
+    --panel:       #f4f7fa;
+    --panel-warm:  #fdf7f1;
+    --ink:         #16202b;
+    --muted:       #5a6b7b;
+    --faint:       #8496a5;
+    --accent:      #2c5f9e;   /* the blue EViews draws its first series in */
+    --accent-soft: #e7eff8;
+    --warm:        #c05621;   /* the orange of its second series */
+    --warm-soft:   #fbeade;
+    --green:       #4e7a3a;   /* its third */
+    --border:      #d9e1e8;
+    --border-firm: #b9c6d1;
+    --shadow: 0 1px 2px rgba(22,32,43,.05), 0 4px 16px rgba(22,32,43,.05);
+    --measure: 74ch;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 16.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { width: min(100% - 2.5rem, 68rem); margin-inline: auto; }
+  .prose { max-width: var(--measure); }
+
+  h1, h2, h3, h4 {
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    color: var(--ink);
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.2;
+  }
+  h2 { font-size: 1.85rem; font-weight: 600; letter-spacing: -.01em; }
+  h3 { font-size: 1.25rem; font-weight: 600; }
+  h4 { font-size: 1.02rem; font-weight: 600; }
+  p { margin: 0; }
+
+  a { color: var(--accent); text-decoration-color: rgba(44,95,158,.35); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--accent); }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+  }
+
+  code, pre, .mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; }
+  :not(pre) > code {
+    background: var(--panel); border: 1px solid var(--border);
+    padding: .08em .36em; border-radius: 3px; font-size: .87em;
+  }
+
+  /* ---------- nav ---------- */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(255,255,255,.93);
+    backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-in { display: flex; align-items: center; gap: 1.5rem; height: 56px; }
+  .nav-brand {
+    font-family: "IBM Plex Mono", monospace; font-weight: 500;
+    font-size: .95rem; color: var(--ink); text-decoration: none; white-space: nowrap;
+  }
+  .nav-links { display: flex; gap: 1.15rem; margin-left: auto; overflow-x: auto; }
+  .nav-links a {
+    font-size: .87rem; color: var(--muted); text-decoration: none; white-space: nowrap;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  /* ---------- header ---------- */
+  .head { padding: 4rem 0 3rem; border-bottom: 1px solid var(--border); }
+  .eyebrow {
+    font-size: .74rem; letter-spacing: .13em; text-transform: uppercase;
+    color: var(--warm); font-weight: 600; margin-bottom: 1rem;
+  }
+  .head h1 { font-size: clamp(2.4rem, 5.5vw, 3.5rem); font-weight: 700; letter-spacing: -.02em; }
+  .lede {
+    font-size: 1.2rem; color: var(--muted); margin-top: 1.1rem; max-width: 60ch;
+  }
+  .byline {
+    margin-top: 1.5rem; font-size: .95rem; color: var(--muted);
+  }
+  .byline strong { color: var(--ink); font-weight: 600; }
+
+  .pills { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.75rem; }
+  .pill {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .78rem; font-weight: 500;
+    border: 1px solid var(--border-firm); border-radius: 999px;
+    padding: .25rem .7rem; color: var(--muted); background: var(--ground);
+    text-decoration: none;
+  }
+  .pill b { color: var(--ink); font-weight: 600; }
+  .pill.on { background: var(--accent-soft); border-color: #a9c4e2; color: #1d4472; }
+  .pill.on b { color: #163659; }
+
+  .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; align-items: center; }
+  .install {
+    display: flex; align-items: center; gap: .8rem;
+    background: var(--ink); color: #eef3f8;
+    border-radius: 6px; padding: .7rem 1rem;
+    font-family: "IBM Plex Mono", monospace; font-size: .9rem;
+    overflow-x: auto;
+  }
+  .install .prompt { color: #7f95a8; user-select: none; }
+  .btn {
+    display: inline-flex; align-items: center; gap: .45rem;
+    border: 1px solid var(--border-firm); border-radius: 6px;
+    padding: .65rem 1.1rem; font-size: .92rem; font-weight: 500;
+    color: var(--ink); text-decoration: none; background: var(--ground);
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+  }
+  .btn.primary:hover { background: #24507f; border-color: #24507f; color: #fff; }
+
+  /* ---------- sections ---------- */
+  section { padding: 3.5rem 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: 0; }
+  .sec-head { margin-bottom: 1.75rem; }
+  .sec-head p { color: var(--muted); margin-top: .6rem; max-width: var(--measure); }
+  .stack > * + * { margin-top: 1.1rem; }
+
+  /* ---------- flow diagram ---------- */
+  .flow { margin: 2rem 0 .5rem; overflow-x: auto; }
+  .flow svg { display: block; min-width: 680px; width: 100%; height: auto; }
+
+  /* ---------- code + output ---------- */
+  pre {
+    margin: 0; padding: 1rem 1.15rem; overflow-x: auto;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 6px; font-size: .84rem; line-height: 1.6;
+    color: #1b2836;
+  }
+  pre.term { background: var(--ink); color: #dce6f0; border-color: var(--ink); }
+  pre.term .c { color: #8aa2b8; }
+  .out {
+    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    box-shadow: var(--shadow); background: var(--ground);
+  }
+  .out-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    padding: .55rem .9rem; background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    font-size: .78rem; color: var(--muted);
+  }
+  .out-bar .tag {
+    font-family: "IBM Plex Mono", monospace; font-size: .76rem;
+    color: var(--accent); font-weight: 500;
+  }
+  .out-bar .src { font-size: .72rem; color: var(--faint); }
+  .out pre { border: 0; border-radius: 0; background: var(--ground); font-variant-numeric: tabular-nums; }
+
+  /* ---------- steps ---------- */
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
+  ol.steps > li {
+    counter-increment: s; position: relative;
+    padding-left: 3.1rem; padding-bottom: 2rem;
+  }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: -.1rem;
+    width: 2.1rem; height: 2.1rem; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent-soft); color: #1d4472;
+    border: 1px solid #a9c4e2;
+    font-family: "IBM Plex Mono", monospace; font-size: .85rem; font-weight: 500;
+  }
+  ol.steps > li::after {
+    content: ""; position: absolute; left: 1.05rem; top: 2.3rem; bottom: .25rem;
+    width: 1px; background: var(--border);
+  }
+  ol.steps > li:last-child { padding-bottom: 0; }
+  ol.steps > li:last-child::after { display: none; }
+  ol.steps h3 { margin-bottom: .5rem; }
+  ol.steps .body > * + * { margin-top: .8rem; }
+
+  /* ---------- tables ---------- */
+  .tbl-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  thead th {
+    text-align: left; background: var(--panel); color: var(--ink);
+    font-weight: 600; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase;
+    padding: .7rem .9rem; border-bottom: 1px solid var(--border-firm); white-space: nowrap;
+  }
+  tbody td { padding: .65rem .9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:nth-child(even) { background: #fafcfd; }
+  td code { white-space: nowrap; }
+  .grp td {
+    background: var(--accent-soft) !important; font-weight: 600; font-size: .78rem;
+    letter-spacing: .05em; text-transform: uppercase; color: #1d4472;
+  }
+
+  /* ---------- plot gallery ---------- */
+  .gallery { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  figure { margin: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--ground); box-shadow: var(--shadow); }
+  figure img { display: block; width: 100%; height: auto; background: #fff; }
+  figcaption { padding: .75rem .95rem; border-top: 1px solid var(--border); font-size: .82rem; color: var(--muted); }
+  figcaption b { display: block; color: var(--ink); font-weight: 600; font-size: .88rem; margin-bottom: .15rem; }
+  figcaption code { font-size: .78rem; }
+
+  /* ---------- callouts ---------- */
+  .note {
+    border-left: 3px solid var(--warm); background: var(--panel-warm);
+    padding: 1rem 1.15rem; border-radius: 0 5px 5px 0; font-size: .93rem;
+  }
+  .note b { color: #8a3d13; }
+  .note.blue { border-left-color: var(--accent); background: var(--accent-soft); }
+  .note.blue b { color: #1d4472; }
+
+  .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .card {
+    border: 1px solid var(--border); border-radius: 6px; padding: 1.15rem 1.25rem;
+    background: var(--ground);
+  }
+  .card h4 { margin-bottom: .4rem; }
+  .card p { font-size: .9rem; color: var(--muted); }
+  .card .k {
+    font-family: "IBM Plex Mono", monospace; font-size: .72rem; color: var(--warm);
+    text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; font-weight: 500;
+  }
+
+  /* ---------- author ---------- */
+  .author {
+    display: flex; flex-wrap: wrap; gap: 1.75rem; align-items: flex-start;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 1.75rem; background: var(--panel);
+  }
+  .author .mark {
+    width: 62px; height: 62px; border-radius: 50%; flex: none;
+    display: grid; place-items: center;
+    background: var(--ground); border: 1px solid var(--border-firm);
+    font-family: "Source Serif 4", serif; font-size: 1.5rem; font-weight: 700; color: var(--accent);
+  }
+  .author .who { flex: 1 1 22rem; }
+  .author .who h3 { font-size: 1.3rem; }
+  .author .who p { color: var(--muted); font-size: .93rem; margin-top: .35rem; }
+  .author .links { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+
+  footer {
+    padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--border);
+    color: var(--faint); font-size: .85rem;
+  }
+  footer a { color: var(--muted); }
+  .foot-in { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
+
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .head { padding: 2.5rem 0 2rem; }
+    section { padding: 2.5rem 0; }
+    .nav-brand { display: none; }
+    .nav-links { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap nav-in">
+    <a class="nav-brand" href="#top">eviews-mcp</a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#install">Install</a>
+      <a href="#connect">Connect</a>
+      <a href="#study">Worked study</a>
+      <a href="#plots">Plots</a>
+      <a href="#tools">Tools</a>
+      <a href="#library">Library</a>
+      <a href="#traps">Traps</a>
+      <a href="#author">Author</a>
+    </div>
+  </div>
+</nav>
+
+<header class="head" id="top">
+  <div class="wrap">
+    <div class="eyebrow">Econometrics automation for Windows</div>
+    <h1>eviews-mcp</h1>
+    <p class="lede">
+      Drive <strong>EViews 13</strong> from Python — or let an AI assistant drive it for you.
+      A Model Context Protocol server and a Python library, sharing one engine.
+      Every number comes from EViews itself.
+    </p>
+    <p class="byline">Created and maintained by <strong>Dr Merwan Roudane</strong></p>
+
+    <div class="pills">
+      <a class="pill on" href="https://pypi.org/project/eviews-mcp/"><b>PyPI</b> v1.2.0</a>
+      <span class="pill"><b>Licence</b> MIT</span>
+      <span class="pill"><b>Python</b> 3.10+</span>
+      <span class="pill"><b>Platform</b> Windows</span>
+      <span class="pill"><b>EViews</b> 10–14</span>
+      <span class="pill"><b>Tests</b> 84 passing</span>
+    </div>
+
+    <div class="cta">
+      <div class="install"><span class="prompt">$</span> pip install eviews-mcp</div>
+      <a class="btn primary" href="https://github.com/merwanroudane/MCP_EVIEWS/blob/main/docs/EViews-Researcher-Guide.md">Read the researcher guide</a>
+      <a class="btn" href="https://github.com/merwanroudane/MCP_EVIEWS">GitHub repository</a>
+      <a class="btn" href="https://pypi.org/project/eviews-mcp/">PyPI project</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>How it works</h2>
+      <p>
+        An AI assistant can write EViews code, but on its own it cannot run it — so it
+        never learns whether the code worked, what the coefficients were, or which sample
+        was used. It guesses, and guessed numbers are invented numbers.
+      </p>
+    </div>
+
+    <div class="flow">
+      <svg viewBox="0 0 940 190" role="img" aria-label="You talk to an AI assistant, which calls eviews-mcp over MCP, which drives EViews over COM automation, which reads and writes your workfile.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#8496a5"></path>
+          </marker>
+        </defs>
+        <g font-family="IBM Plex Sans, sans-serif">
+          <!-- you -->
+          <rect x="8" y="52" width="150" height="72" rx="7" fill="#ffffff" stroke="#b9c6d1"></rect>
+          <text x="83" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#16202b">You</text>
+          <text x="83" y="103" text-anchor="middle" font-size="12" fill="#5a6b7b">plain English</text>
+
+          <!-- assistant -->
+          <rect x="204" y="52" width="170" height="72" rx="7" fill="#e7eff8" stroke="#a9c4e2"></rect>
+          <text x="289" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#1d4472">AI assistant</text>
+          <text x="289" y="103" text-anchor="middle" font-size="12" fill="#2c5f9e">Claude, or any MCP client</text>
+
+          <!-- server -->
+          <rect x="420" y="52" width="170" height="72" rx="7" fill="#fbeade" stroke="#e0b394"></rect>
+          <text x="505" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#8a3d13">eviews-mcp</text>
+          <text x="505" y="103" text-anchor="middle" font-size="12" fill="#c05621">this package</text>
+
+          <!-- eviews -->
+          <rect x="636" y="52" width="150" height="72" rx="7" fill="#ffffff" stroke="#b9c6d1"></rect>
+          <text x="711" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#16202b">EViews 13</text>
+          <text x="711" y="103" text-anchor="middle" font-size="12" fill="#5a6b7b">the real thing</text>
+
+          <!-- workfile -->
+          <rect x="832" y="52" width="100" height="72" rx="7" fill="#f4f7fa" stroke="#b9c6d1" stroke-dasharray="4 3"></rect>
+          <text x="882" y="82" text-anchor="middle" font-size="14" font-weight="600" fill="#16202b">.wf1</text>
+          <text x="882" y="103" text-anchor="middle" font-size="12" fill="#5a6b7b">workfile</text>
+
+          <!-- arrows -->
+          <line x1="162" y1="88" x2="198" y2="88" stroke="#8496a5" stroke-width="1.5" marker-end="url(#ar)"></line>
+          <line x1="378" y1="88" x2="414" y2="88" stroke="#8496a5" stroke-width="1.5" marker-start="url(#ar)" marker-end="url(#ar)"></line>
+          <line x1="594" y1="88" x2="630" y2="88" stroke="#8496a5" stroke-width="1.5" marker-start="url(#ar)" marker-end="url(#ar)"></line>
+          <line x1="790" y1="88" x2="826" y2="88" stroke="#8496a5" stroke-width="1.5" marker-start="url(#ar)" marker-end="url(#ar)"></line>
+
+          <text x="396" y="40" text-anchor="middle" font-size="11.5" fill="#5a6b7b" font-family="IBM Plex Mono, monospace">MCP</text>
+          <text x="612" y="40" text-anchor="middle" font-size="11.5" fill="#5a6b7b" font-family="IBM Plex Mono, monospace">COM</text>
+          <text x="396" y="150" text-anchor="middle" font-size="11.5" fill="#8496a5">tool calls</text>
+          <text x="612" y="150" text-anchor="middle" font-size="11.5" fill="#8496a5">automation</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="prose stack" style="margin-top:1.5rem">
+      <p>
+        With MCP in place the assistant runs the code, reads the real output, and continues
+        from there. If the ADF test says <em>p</em> = 0.886, it sees 0.886.
+      </p>
+      <div class="note blue">
+        <b>The assistant cannot fabricate results</b>, because the results come back from
+        EViews. It can still misread them or choose a poor specification — you remain the
+        econometrician — but the numbers are real.
+      </div>
+    </div>
+
+    <div class="cards" style="margin-top:2rem">
+      <div class="card">
+        <div class="k">Two ways to use it</div>
+        <h4>As an MCP server</h4>
+        <p>An assistant drives EViews conversationally. Best for exploration, diagnostics and getting unstuck.</p>
+      </div>
+      <div class="card">
+        <div class="k">Same engine</div>
+        <h4>As a Python library</h4>
+        <p>Write a script that drives EViews. Best for the final, reproducible version that ships with your paper.</p>
+      </div>
+      <div class="card">
+        <div class="k">Not a reimplementation</div>
+        <h4>EViews does the maths</h4>
+        <p>There is no second statistics engine here. Every coefficient on this page was computed by EViews.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ INSTALL ============ -->
+<section id="install">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>Installation</h2>
+      <p>Windows with a licensed EViews installation, and Python 3.10 or newer.</p>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <h3>Install the package</h3>
+        <div class="body">
+          <pre class="term"><span class="c">:: with pandas support, recommended</span>
+pip install "eviews-mcp[pandas]"</pre>
+          <p style="font-size:.92rem;color:var(--muted)">
+            This pulls <code>mcp</code> and <code>pywin32</code> automatically.
+          </p>
+        </div>
+      </li>
+      <li>
+        <h3>Check EViews is reachable</h3>
+        <div class="body">
+          <pre class="term">python -c "from eviews_mcp import EViews; print(EViews().status())"</pre>
+          <div class="out">
+            <div class="out-bar"><span class="tag">output</span><span class="src">verified on EViews 13.0</span></div>
+<pre>{'connected': True, 'progid': 'EViews.Manager', 'version': '13.0',
+ 'workfile': None, 'scratch_dir': 'C:\\ev_mcp'}</pre>
+          </div>
+          <p style="font-size:.92rem;color:var(--muted)">
+            <code>'connected': True</code> is the thing to look for. EViews starts hidden if it
+            was not already running — the first launch takes a few seconds.
+          </p>
+        </div>
+      </li>
+      <li>
+        <h3>You are ready</h3>
+        <div class="body">
+          <p style="font-size:.95rem;color:var(--muted)">
+            Use it as a library straight away, or connect an assistant below.
+          </p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ CONNECT ============ -->
+<section id="connect">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>Connect an AI assistant</h2>
+      <p>Any MCP-capable client works. Two of the most common:</p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="k">Claude Code</div>
+        <h4>One command</h4>
+        <pre class="term" style="margin-top:.8rem">claude mcp add eviews -- eviews-mcp</pre>
+      </div>
+      <div class="card">
+        <div class="k">Claude Desktop</div>
+        <h4>Settings → Developer → Edit Config</h4>
+        <pre style="margin-top:.8rem">{
+  "mcpServers": {
+    "eviews": {
+      "command": "eviews-mcp"
+    }
+  }
+}</pre>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:1.5rem">
+      <b>Quit and reopen the application completely.</b> The config file is only read at
+      startup, so reloading the window is not enough. If <code>eviews-mcp</code> is not found,
+      run <code>where eviews-mcp</code> and use the full path instead — remembering to double
+      the backslashes inside JSON.
+    </div>
+
+    <div class="prose stack" style="margin-top:1.75rem">
+      <p>Confirm it worked by asking the assistant to <em>“check the EViews connection”</em>:</p>
+      <div class="out">
+        <div class="out-bar"><span class="tag">eviews_status</span><span class="src">real session output</span></div>
+<pre>Connected to EViews 13.0 via EViews.Manager
+Scratch directory: C:\ev_mcp
+Active workfile: none open (use create_workfile or open_workfile)</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WORKED STUDY ============ -->
+<section id="study">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>A complete study, end to end</h2>
+      <p>
+        A full ARDL exercise on 100 quarterly observations, exactly as it ran. The data were
+        generated with a known long-run relationship —
+        <span class="mono">lngdp = 1.2 + 0.55·lnk + 0.35·lnl</span> — so you can check the
+        tool recovers it.
+      </p>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <h3>Load the data, then check what you actually loaded</h3>
+        <div class="body">
+          <p style="font-size:.95rem;color:var(--muted)">
+            <em>“Import C:\ev_mcp\guide\macro.csv, then describe the workfile.”</em>
+          </p>
+          <div class="out">
+            <div class="out-bar"><span class="tag">import_data → workfile_info</span><span class="src">real session output</span></div>
+<pre>Imported C:\ev_mcp\guide\macro.csv.
+Series now present: DATE, LNGDP, LNK, LNL
+
+Workfile:       MACRO
+Page:           Macro
+Frequency:      Q
+Page range:     1996Q1 2020Q4
+Current sample: 1996Q1 2020Q4
+Obs in range:   100
+Obs in sample:  100
+Objects:        4</pre>
+          </div>
+          <p style="font-size:.92rem;color:var(--muted)">
+            EViews read the date column and structured the page itself. Confirming
+            <b>100 observations</b> takes five seconds and catches the worst class of silent
+            error — see <a href="#traps">Traps</a>.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <h3>Establish the order of integration</h3>
+        <div class="body">
+          <p style="font-size:.95rem;color:var(--muted)"><em>“Run an ADF test on lngdp in levels, then on the first difference.”</em></p>
+          <div class="out">
+            <div class="out-bar"><span class="tag">show("lngdp", "uroot")</span><span class="src">levels</span></div>
+<pre>Null Hypothesis: LNGDP has a unit root
+Exogenous: Constant
+Lag Length: 2 (Automatic - based on SIC, maxlag=12)
+
+                                            t-Statistic  Prob.*
+
+Augmented Dickey-Fuller test statistic      -0.500089    0.885575
+Test critical values:   1% level            -3.49917
+                        5% level            -2.89155
+                        10% level           -2.58285
+
+*MacKinnon (1996) one-sided p-values.</pre>
+          </div>
+          <div class="out" style="margin-top:1rem">
+            <div class="out-bar"><span class="tag">show("lngdp", "uroot(dif=1)")</span><span class="src">first difference</span></div>
+<pre>Null Hypothesis: D(LNGDP) has a unit root
+Exogenous: Constant
+Lag Length: 1 (Automatic - based on SIC, maxlag=11)
+
+                                            t-Statistic  Prob.*
+
+Augmented Dickey-Fuller test statistic      -12.1778     0.0001
+Test critical values:   1% level            -3.49917
+                        5% level            -2.89155
+                        10% level           -2.58285</pre>
+          </div>
+          <p style="font-size:.92rem;color:var(--muted)">
+            Unit root not rejected in levels (<em>p</em> = 0.886), strongly rejected in
+            differences. <span class="mono">lngdp</span> is I(1), so the ARDL bounds framework applies.
+          </p>
+        </div>
+      </li>
+
+      <li>
+        <h3>Estimate the ARDL</h3>
+        <div class="body">
+          <pre>equation ardl1.ardl(deplags=4, reglags=4) lngdp lnk lnl</pre>
+          <div class="out" style="margin-top:1rem">
+            <div class="out-bar"><span class="tag">show("ardl1")</span><span class="src">real session output</span></div>
+<pre>Dependent Variable: LNGDP
+Method: ARDL
+Sample: 1996Q2 2020Q4
+Included observations: 99
+Dependent lags: 4 (Automatic)
+Automatic-lag linear regressors (4 max. lags): LNK LNL
+Deterministics: Restricted constant and no trend (Case 2)
+Model selection method: Akaike info criterion (AIC)
+Number of models evaluated: 100
+Selected model: ARDL(1,0,0)
+
+Variable            Coefficient  Std. Error   t-Statistic  Prob.*
+
+LNGDP(-1)           0.0155166    0.0978296    0.158608     0.874314
+LNK                 0.53458      0.059789     8.94111      3.02733e-14
+LNL                 0.365216     0.085789     4.25714      4.86164e-05
+C                   1.13554      0.249799     4.54582      1.61133e-05
+
+R-squared           0.985599     Mean dependent var        6.49484
+Adjusted R-squared  0.985144     S.D. dependent var        0.239988
+S.E. of regression  0.029251     Akaike info criterion     -4.18624
+Sum squared resid   0.0812841    Schwarz criterion         -4.08139
+Log likelihood      211.219      Hannan-Quinn criter.      -4.14382
+F-statistic         2167.22      Durbin-Watson stat        2.02168
+Prob(F-statistic)   2.60070e-87</pre>
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Read the long-run relationship</h3>
+        <div class="body">
+          <p style="font-size:.95rem;color:var(--muted)"><em>“Show me the cointegrating relationship.”</em></p>
+          <div class="out">
+            <div class="out-bar"><span class="tag">show("ardl1", "cointrel")</span><span class="src">real session output</span></div>
+<pre>Deterministics: Rest. constant (Case 2)
+------------------------------------------------------------
+CE = LNGDP(-1) - (0.543006*LNK + 0.370972*LNL + 1.153436)
+------------------------------------------------------------
+
+    Variable *     Coefficient  Std. Error  t-Statistic  Prob.
+------------------------------------------------------------
+        LNK          0.543006    0.025016    21.70645    0.0000
+        LNL          0.370972    0.080765     4.593229   0.0000
+         C           1.153436    0.222325     5.188072   0.0000
+------------------------------------------------------------
+Note: * Coefficients derived from the CEC regression.</pre>
+          </div>
+          <div class="note blue" style="margin-top:1rem">
+            <b>Estimated 0.543 and 0.371, against true values of 0.55 and 0.35.</b>
+            This view freezes into an EViews <em>spool</em> rather than a table, which cannot be
+            read over COM at all — the package writes it out as text so you can see it.
+          </div>
+        </div>
+      </li>
+
+      <li>
+        <h3>Diagnose, then save</h3>
+        <div class="body">
+          <div class="out">
+            <div class="out-bar"><span class="tag">show("ardl1", "auto(2)")</span><span class="src">Breusch-Godfrey</span></div>
+<pre>Breusch-Godfrey Serial Correlation LM Test:
+Null hypothesis: No serial correlation at up to 2 lags
+
+F-statistic         1.47903      Prob. F(2,93)          0.233167
+Obs*R-squared       3.05184      Prob. Chi-Square(2)    0.217421</pre>
+          </div>
+          <p style="font-size:.92rem;color:var(--muted)">
+            No serial correlation (<em>p</em> = 0.233). Saving produces an ordinary
+            <span class="mono">.wf1</span> that opens in the EViews GUI like any other —
+            nothing locks your work inside the tool.
+          </p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ PLOTS ============ -->
+<section id="plots">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>Plots</h2>
+      <p>
+        Graphs cannot be returned as text, so they are written to a file. Every image below
+        was exported from the session above with a single call.
+      </p>
+    </div>
+
+    <div class="gallery">
+      <figure>
+        <img src="assets/series-lines.png" alt="Line chart of lngdp, lnk and lnl from 1996 to 2020, all trending upward.">
+        <figcaption><b>The three series</b><code>export_object("g_series", "series-lines.png")</code></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/scatter.png" alt="Scatter plot of lngdp against lnk showing a tight positive linear relationship.">
+        <figcaption><b>Scatter, output against capital</b><code>graph g_scat.scat lnk lngdp</code></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/residuals.png" alt="Actual, fitted and residual plot for the regression, residuals centred on zero.">
+        <figcaption><b>Actual, fitted, residual</b><code>export_object("eq1", …, view="resids")</code></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/cusum.png" alt="CUSUM stability test plot with the statistic remaining inside the 5 percent bounds.">
+        <figcaption><b>CUSUM stability test</b><code>view="rls(q)"</code></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/correlogram.png" alt="Correlogram of lngdp showing slowly decaying autocorrelations.">
+        <figcaption><b>Correlogram</b><code>view="correl"</code></figcaption>
+      </figure>
+      <figure>
+        <img src="assets/impulse.png" alt="Grid of impulse response functions from the three-variable VAR.">
+        <figcaption><b>VAR impulse responses</b><code>view="impulse(10,m)"</code></figcaption>
+      </figure>
+    </div>
+
+    <div class="note" style="margin-top:1.75rem">
+      <b>Formats matter here.</b> In raw EViews automation <code>graph.save "figure.png"</code>
+      writes an <em>EMF</em> file with a <code>.png</code> name. This package derives the format
+      from the extension and passes it explicitly, and a save that produces no file raises an
+      error instead of reporting success.
+      Graphs: <code>png jpg pdf emf wmf bmp gif eps tex</code>. Tables: <code>csv rtf txt html</code>.
+    </div>
+  </div>
+</section>
+
+<!-- ============ TOOLS ============ -->
+<section id="tools">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>Tool reference</h2>
+      <p>
+        The twenty tools an assistant has available. You never name them yourself — you ask in
+        words — but knowing the vocabulary helps you ask precisely.
+      </p>
+    </div>
+
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th style="width:16rem">Tool</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr class="grp"><td colspan="2">Session</td></tr>
+          <tr><td><code>eviews_status</code></td><td>Connection, version and active workfile. Start here when debugging.</td></tr>
+          <tr><td><code>reset_eviews</code></td><td>Discard the instance and start a clean one.</td></tr>
+          <tr><td><code>set_eviews_visible</code></td><td>Show or hide the EViews window.</td></tr>
+
+          <tr class="grp"><td colspan="2">Workfiles</td></tr>
+          <tr><td><code>create_workfile</code></td><td>New page by frequency and range, e.g. quarterly 1990Q1–2020Q4.</td></tr>
+          <tr><td><code>open_workfile</code></td><td>Open an existing <code>.wf1</code> or <code>.wf2</code>.</td></tr>
+          <tr><td><code>save_workfile</code></td><td>Save, optionally to a new path.</td></tr>
+          <tr><td><code>close_workfile</code></td><td>Close one or all open workfiles. EViews caps how many may be open.</td></tr>
+          <tr><td><code>workfile_info</code></td><td>Name, page, frequency, range, sample and object count.</td></tr>
+          <tr><td><code>list_objects</code></td><td>Inventory, filterable by EViews type.</td></tr>
+          <tr><td><code>set_sample</code></td><td>Restrict the estimation sample.</td></tr>
+
+          <tr class="grp"><td colspan="2">Running code</td></tr>
+          <tr><td><code>run_eviews_code</code></td><td><b>Main tool.</b> Runs a block of EViews program code — loops, conditionals, subroutines.</td></tr>
+          <tr><td><code>run_program_file</code></td><td>Run an existing <code>.prg</code>, with arguments.</td></tr>
+          <tr><td><code>command</code></td><td>A single command line.</td></tr>
+
+          <tr class="grp"><td colspan="2">Reading results</td></tr>
+          <tr><td><code>show</code></td><td><b>Renders any object or view as text.</b> This is how results are read.</td></tr>
+          <tr><td><code>evaluate</code></td><td>One value from an expression, e.g. <code>eq1.@r2</code>.</td></tr>
+          <tr><td><code>describe_object</code></td><td>Object type, plus summary statistics for a series.</td></tr>
+
+          <tr class="grp"><td colspan="2">Data</td></tr>
+          <tr><td><code>read_data</code></td><td>Series as an aligned table or full-precision CSV.</td></tr>
+          <tr><td><code>write_series</code></td><td>Write values from the conversation into a series.</td></tr>
+          <tr><td><code>import_data</code></td><td>Read <code>.xlsx</code>, <code>.csv</code>, <code>.dta</code>, <code>.sav</code> and more.</td></tr>
+          <tr><td><code>export_data</code></td><td>Write series to a file.</td></tr>
+          <tr><td><code>export_object</code></td><td>Save an object — the way to retrieve graphs.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:2.5rem">Views: one object, many results</h3>
+    <p class="prose" style="color:var(--muted);margin-top:.6rem">
+      Every EViews view is reachable through <code>show</code>, so diagnostics need no special
+      support. Ask in words — <em>“test for heteroskedasticity”</em> — and the assistant picks the view.
+    </p>
+
+    <div class="tbl-scroll" style="margin-top:1.25rem">
+      <table>
+        <thead><tr><th style="width:18rem">Ask for</th><th style="width:12rem">View</th><th>What you get</th></tr></thead>
+        <tbody>
+          <tr><td>Estimation output</td><td><em>default</em></td><td>The coefficient table</td></tr>
+          <tr><td>Unit root test</td><td><code>uroot</code></td><td>ADF on a series</td></tr>
+          <tr><td>Unit root on differences</td><td><code>uroot(dif=1)</code></td><td>ADF on Δ<em>x</em></td></tr>
+          <tr><td>Descriptive statistics</td><td><code>stats</code></td><td>Mean, SD, skew, Jarque-Bera</td></tr>
+          <tr><td>Correlogram</td><td><code>correl</code></td><td>ACF and PACF</td></tr>
+          <tr><td>Residual table</td><td><code>resids(t)</code></td><td>Actual, fitted, residual</td></tr>
+          <tr><td>Serial correlation</td><td><code>auto(2)</code></td><td>Breusch-Godfrey LM test</td></tr>
+          <tr><td>Heteroskedasticity</td><td><code>white</code></td><td>White test</td></tr>
+          <tr><td>Coefficient restriction</td><td><code>wald c(2)=c(3)</code></td><td>Wald test</td></tr>
+          <tr><td>Coefficient covariance</td><td><code>coefcov</code></td><td>Variance–covariance matrix</td></tr>
+          <tr><td>Long-run relation (ARDL)</td><td><code>cointrel</code></td><td>Cointegrating equation</td></tr>
+          <tr><td>Error-correction results</td><td><code>ecresults</code></td><td>ECM form</td></tr>
+          <tr><td>Granger causality (VAR)</td><td><code>testexog</code></td><td>Block exogeneity Wald tests</td></tr>
+          <tr><td>Impulse responses (VAR)</td><td><code>impulse(t)</code></td><td>IRF table</td></tr>
+          <tr><td>Variance decomposition</td><td><code>decomp(10,t)</code></td><td>Forecast error decomposition</td></tr>
+          <tr><td>Stability (CUSUM)</td><td><code>rls(q)</code></td><td>CUSUM test against 5% bounds</td></tr>
+          <tr><td>Recursive coefficients</td><td><code>rls(c)</code></td><td>Coefficient paths with plus/minus 2 S.E.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note" style="margin-top:1.5rem">
+      <b>Some views draw rather than tabulate.</b> <code>resids</code> and <code>impulse</code>
+      are graphs by default; adding <code>t</code> — <code>resids(t)</code>,
+      <code>impulse(t)</code> — asks EViews for the table form instead.
+    </div>
+  </div>
+</section>
+
+<!-- ============ LIBRARY ============ -->
+<section id="library">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>The Python library</h2>
+      <p>
+        Conversation is good for finding a specification. It is poor for a paper, because a chat
+        log is not a method section. The same work as a script:
+      </p>
+    </div>
+
+    <pre>from eviews_mcp import EViews
+
+with EViews() as ev:
+    ev.import_file(r"C:\data\macro.csv")
+
+    # Order of integration
+    for name in ("lngdp", "lnk", "lnl"):
+        print(ev.show(name, "uroot"))
+        print(ev.show(name, "uroot(dif=1)"))
+
+    # Long-run model
+    ev.run("equation ardl1.ardl(deplags=4, reglags=4) lngdp lnk lnl")
+    print(ev.show("ardl1"))
+    print(ev.show("ardl1", "cointrel"))
+    print(ev.show("ardl1", "auto(2)"))
+
+    print("R-squared:", ev.value("ardl1.@r2"))
+
+    ev.export_object("ardl1", "residuals.png", view="resids")
+    ev.save_workfile(r"C:\data\study.wf1")</pre>
+
+    <p class="prose" style="margin-top:1.25rem;color:var(--muted)">
+      Run it with <code>python study.py</code> and you get identical results on any machine
+      with EViews. That file belongs in your replication package; the transcript does not.
+    </p>
+
+    <h3 style="margin-top:2.5rem">pandas, in both directions</h3>
+    <div class="cards" style="margin-top:1rem">
+      <div class="card">
+        <div class="k">EViews → pandas</div>
+        <pre style="margin-top:.6rem;font-size:.8rem">frame = ev.to_dataframe(
+    ["lngdp", "lnk", "lnl"])
+frame.describe()</pre>
+        <p style="margin-top:.7rem">Indexed by observation label — <code>1996Q1</code>, <code>1996Q2</code>, …</p>
+      </div>
+      <div class="card">
+        <div class="k">pandas → EViews</div>
+        <pre style="margin-top:.6rem;font-size:.8rem">idx = pd.period_range(
+    "2005Q1", periods=40, freq="Q")
+df = pd.DataFrame({...}, index=idx)
+ev.from_dataframe(df)</pre>
+        <p style="margin-top:.7rem">A dated index sets the page frequency and span, so dates stay aligned. Text columns are skipped.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:2.5rem">Errors name the line</h3>
+    <div class="out" style="margin-top:1rem">
+      <div class="out-bar"><span class="tag">EViewsError</span><span class="src">passed through unchanged</span></div>
+<pre>BROKEN_COMMAND is not defined or is an illegal command
+in "BROKEN_COMMAND" in MCP_3BA1F7DC.PRG on line 2.</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRAPS ============ -->
+<section id="traps">
+  <div class="wrap">
+    <div class="sec-head prose">
+      <h2>Traps that silently corrupt results</h2>
+      <p>
+        Properties of EViews automation that produce <b>wrong numbers with no error message</b>.
+        The package defends against each one — worth knowing if you also write your own EViews scripts.
+      </p>
+    </div>
+
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th style="width:20rem">The trap</th><th>What this package does</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Importing into an open workfile truncates your data.</b> EViews cuts the file
+                to the open page's length. A 100-row CSV read into a 12-row page becomes 12 rows,
+                silently — every result afterwards computed on 12% of the data.</td>
+            <td>Imports create a new workfile sized to the file. Merging into the current page is opt-in.</td>
+          </tr>
+          <tr>
+            <td><b>The current sample governs writes, not just estimation.</b> Under a restricted
+                sample, writing 100 values writes only those inside it; the rest stay <code>NA</code>.</td>
+            <td>Writes default to the whole page.</td>
+          </tr>
+          <tr>
+            <td><b>A restricted sample persists</b> until changed, so a later estimation silently
+                uses it.</td>
+            <td>Every output header names the sample used. Read the <code>Sample:</code> line.</td>
+          </tr>
+          <tr>
+            <td><b>Graph exports ignore the file extension.</b> <code>graph.save "figure.png"</code>
+                writes an EMF file with a <code>.png</code> name.</td>
+            <td>Format derived from the extension and passed explicitly; a save producing no file raises.</td>
+          </tr>
+          <tr>
+            <td><b>Relative paths are not relative to you.</b> EViews resolves them against its own
+                working directory, so your file appears somewhere unrelated.</td>
+            <td>All paths are made absolute before being handed over.</td>
+          </tr>
+          <tr>
+            <td><b>EViews limits how many workfiles may be open</b>, then refuses to create another.</td>
+            <td><code>close_workfile</code> keeps long sessions healthy.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note" style="margin-top:1.5rem">
+      <b>The five-second habit that catches most of these:</b> read the four header lines on every
+      EViews output — dependent variable, method, sample, included observations.
+    </div>
+  </div>
+</section>
+
+<!-- ============ AUTHOR ============ -->
+<section id="author">
+  <div class="wrap">
+    <div class="sec-head prose"><h2>Author</h2></div>
+
+    <div class="author">
+      <div class="mark">MR</div>
+      <div class="who">
+        <h3>Dr Merwan Roudane</h3>
+        <p>
+          Econometrician and package author. Creator of the
+          <span class="mono">QuantileOnQuantile</span>, <span class="mono">mqqr</span>,
+          <span class="mono">qqkrls</span> and <span class="mono">mqqcause</span> packages on CRAN,
+          and of <span class="mono">eviews-mcp</span>.
+        </p>
+        <div class="links">
+          <a class="btn" href="https://github.com/merwanroudane">GitHub profile</a>
+          <a class="btn" href="https://github.com/merwanroudane/MCP_EVIEWS">Repository</a>
+          <a class="btn" href="https://pypi.org/project/eviews-mcp/">PyPI</a>
+          <a class="btn" href="https://github.com/merwanroudane/MCP_EVIEWS/issues">Report an issue</a>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:2.5rem">Citing this software</h3>
+    <div class="out" style="margin-top:1rem">
+      <div class="out-bar"><span class="tag">suggested wording</span><span class="src">methods or software note</span></div>
+<pre>Estimation was carried out in EViews 13, driven through the
+eviews-mcp interface (Roudane, 2026).</pre>
+    </div>
+
+    <h3 style="margin-top:2.5rem">Everything in one place</h3>
+    <div class="tbl-scroll" style="margin-top:1rem">
+      <table>
+        <thead><tr><th style="width:16rem">Resource</th><th>Link</th></tr></thead>
+        <tbody>
+          <tr><td>PyPI package</td><td><a href="https://pypi.org/project/eviews-mcp/">pypi.org/project/eviews-mcp</a></td></tr>
+          <tr><td>Source code</td><td><a href="https://github.com/merwanroudane/MCP_EVIEWS">github.com/merwanroudane/MCP_EVIEWS</a></td></tr>
+          <tr><td>Researcher guide</td><td><a href="https://github.com/merwanroudane/MCP_EVIEWS/blob/main/docs/EViews-Researcher-Guide.md">Zero to a finished ARDL study</a></td></tr>
+          <tr><td>Issue tracker</td><td><a href="https://github.com/merwanroudane/MCP_EVIEWS/issues">Report a bug or ask a question</a></td></tr>
+          <tr><td>Changelog</td><td><a href="https://github.com/merwanroudane/MCP_EVIEWS/blob/main/CHANGELOG.md">Release history</a></td></tr>
+          <tr><td>Licence</td><td><a href="https://github.com/merwanroudane/MCP_EVIEWS/blob/main/LICENSE">MIT</a></td></tr>
+          <tr><td>Model Context Protocol</td><td><a href="https://modelcontextprotocol.io">modelcontextprotocol.io</a></td></tr>
+          <tr><td>EViews</td><td><a href="https://www.eviews.com">eviews.com</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot-in">
+    <div>
+      <b style="color:var(--muted)">eviews-mcp</b> v1.2.0 — MIT licence — © 2026 Merwan Roudane
+    </div>
+    <div>
+      Requires a licensed EViews installation. Not affiliated with IHS EViews.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
