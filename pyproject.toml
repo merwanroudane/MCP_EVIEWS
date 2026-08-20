@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eviews-mcp"
+version = "1.1.0"
+description = "Drive EViews from Python, and expose it to LLM clients over MCP"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Merwan Roudane", email = "merwanroudane920@gmail.com" },
+]
+maintainers = [
+    { name = "Merwan Roudane", email = "merwanroudane920@gmail.com" },
+]
+keywords = [
+    "eviews",
+    "econometrics",
+    "time-series",
+    "mcp",
+    "model-context-protocol",
+    "statistics",
+    "regression",
+    "com-automation",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "mcp[cli]>=1.2.0",
+    "pywin32>=306; sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+pandas = ["pandas>=1.5"]
+dev = [
+    "pandas>=1.5",
+    "pytest>=7.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/merwanroudane/MCP_EVIEWS"
+Repository = "https://github.com/merwanroudane/MCP_EVIEWS"
+Issues = "https://github.com/merwanroudane/MCP_EVIEWS/issues"
+
+[project.scripts]
+eviews-mcp = "eviews_mcp.server:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eviews_mcp"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "examples", "README.md", "LICENSE", "CHANGELOG.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The live suites need a real EViews installation, so the default run is the
+# offline set. Run the others explicitly, e.g. python tests/test_live.py
+addopts = "--ignore=tests/test_live.py --ignore=tests/test_live_client.py"

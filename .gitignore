@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Local MCP client registration, machine specific
+.mcp.json
+
+# EViews scratch and output
+*.wf1
+*.wf2
+*.prg
+*.log
+
+# Graph and table exports produced by the examples and live tests
+*.emf
+*.wmf
+*.eps
+phillips_residuals.*
+lib_graph.*
