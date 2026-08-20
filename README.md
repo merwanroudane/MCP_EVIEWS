@@ -1,5 +1,6 @@
 # eviews-mcp
 
+[![Tests](https://github.com/merwanroudane/MCP_EVIEWS/actions/workflows/tests.yml/badge.svg)](https://github.com/merwanroudane/MCP_EVIEWS/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/eviews-mcp?color=2c5f9e&label=PyPI)](https://pypi.org/project/eviews-mcp/)
 [![Python](https://img.shields.io/pypi/pyversions/eviews-mcp?color=2c5f9e)](https://pypi.org/project/eviews-mcp/)
 [![Licence](https://img.shields.io/badge/licence-MIT-2c5f9e)](LICENSE)

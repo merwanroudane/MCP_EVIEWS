@@ -122,7 +122,7 @@ You should see something like `Python 3.13.1`.
 In the same terminal:
 
 ```bash
-pip install "eviews-mcp[pandas] @ git+https://github.com/merwanroudane/MCP_EVIEWS.git"
+pip install "eviews-mcp[pandas]"
 ```
 
 The `[pandas]` part adds DataFrame support, which you want if you plan to move data between EViews and Python.
@@ -418,6 +418,101 @@ You now have an ordinary `.wf1` you can open in the EViews GUI like any other. N
 
 ---
 
+### 6.7 The same checks, in one call each
+
+Sections 6.2 and 6.5 ran the unit root tests and the diagnostics one view at a
+time, which is what is really happening underneath. Three tools do the whole
+routine in a single step.
+
+**Order of integration.** Ask *"test lngdp for a unit root"*:
+
+```text
+Unit root test on LNGDP (alpha = 0.05)
+
+levels         statistic    -0.5001   p-value 0.8856     unit root not rejected
+               lag length 2 (Automatic - based on SIC, maxlag=12)
+1 difference   statistic   -12.1778   p-value 0.0001     stationary
+               lag length 1 (Automatic - based on SIC, maxlag=11)
+
+Conclusion: I(1)
+```
+
+It tests the levels, then successive differences, and stops at the first
+rejection. The same on `lnk` also returns I(1), which is what justifies the
+bounds framework for this data.
+
+Other tests are a word away — *"use Phillips-Perron"* or *"use KPSS"*. Note that
+**KPSS reverses the null**: it tests stationarity rather than a unit root, so the
+"order of integration" line does not apply to it.
+
+**Coefficients as numbers.** Ask *"show me the ARDL coefficients as a table"*:
+
+```text
+Variable                    Coefficient     Std. Error  t-Statistic        Prob.
+--------------------------------------------------------------------------------
+LNGDP(-1)                     0.0155166      0.0978296       0.1586       0.8743
+LNK                             0.53458       0.059789       8.9411    3.027e-14
+LNL                            0.365216       0.085789       4.2571    4.862e-05
+C                               1.13554       0.249799       4.5458    1.611e-05
+```
+
+Same numbers as the full output, without the surrounding block — useful when you
+want the assistant to compare a coefficient against a hypothesised value, or when
+you are assembling your own table.
+
+**The whole diagnostic battery.** Ask *"run the diagnostics on ardl1"*:
+
+```text
+Diagnostics for ARDL1 (alpha = 0.05)
+
+  R-squared:             0.985599
+  Adjusted R-squared:    0.985144
+  S.E. of regression:    0.029251
+  Durbin-Watson stat:    2.02168
+
+  Breusch-Godfrey serial correlation
+    null: no serial correlation up to 2 lags
+    statistic 1.47903, p-value 0.2332 -> no evidence of serial correlation
+  White heteroskedasticity
+    null: homoskedasticity
+    statistic 0.571757, p-value 0.635 -> no evidence of heteroskedasticity
+  Jarque-Bera normality
+    null: residuals are normal
+    statistic 2.59087, p-value 0.2738 -> no evidence against normal residuals
+
+All 3 diagnostics pass at the 0.05 level.
+```
+
+Two things to understand about that last line before you rely on it.
+
+**It reads p-values, nothing more.** "Pass" means a null was not rejected at the
+level you chose. It is not a judgement that the specification is sound. A model
+can clear all three tests and still be misspecified — omitted variables, a
+structural break, the wrong functional form — and none of these tests will say
+so. The econometrics remains yours.
+
+**A test that cannot run says so.** Some tests do not apply to some equations;
+White has nothing to work with on a constant-only regression, for instance. When
+that happens the report names the test and gives the reason EViews returned,
+rather than quietly leaving it out:
+
+```text
+2 of 2 diagnostics reject: Breusch-Godfrey serial correlation, Jarque-Bera
+normality. 1 could not be run: White heteroskedasticity.
+```
+
+Without that, a summary reading "all diagnostics pass" would be counting fewer
+tests than you think it is.
+
+In a script, the same three return structured values rather than text — a list
+of coefficient dictionaries, and reports you can index into:
+
+```python
+ev.coefficients("ardl1")[1]["p_value"]     # 3.0273e-14
+ev.unit_root("lngdp")["order_of_integration"]   # 1
+ev.diagnose("ardl1")["tests"][0]["rejected"]    # False
+```
+
 ## 7. How results are read
 
 Worth understanding, because it explains one behaviour that surprises people.
@@ -563,6 +658,9 @@ What the assistant has available. You never call these by name — you ask in wo
 | `show` | Render an object or view as text |
 | `evaluate` | One number, e.g. `eq1.@r2` |
 | `describe_object` | Type, and statistics for a series |
+| `equation_coefficients` | Coefficients as a table of numbers. |
+| `unit_root` | Order of integration, tested down through differences. |
+| `diagnose_equation` | Serial correlation, heteroskedasticity, normality. |
 
 **Data**
 

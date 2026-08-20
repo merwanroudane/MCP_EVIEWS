@@ -1,0 +1,66 @@
+name: Tests
+
+# Only the offline suite runs here. The other two drive a real EViews
+# installation over Windows COM, which needs a licence and a desktop session,
+# so they stay a local step -- see the note at the bottom of the README.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    name: Offline suite (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is where the package actually runs; Ubuntu proves the parsing
+        # and formatting layers carry no accidental dependency on COM, and that
+        # importing the package on another platform still works.
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Run the offline suite
+        run: python tests/test_offline.py
+
+      - name: Import the package without pywin32 present
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          python - <<'PY'
+          import eviews_mcp
+          print("version:", eviews_mcp.__version__)
+          try:
+              eviews_mcp.EViews
+          except ImportError as exc:
+              assert "Windows" in str(exc), exc
+              print("platform guard reports clearly:", str(exc)[:80])
+          else:
+              raise SystemExit("expected an ImportError on this platform")
+          PY
+
+  package:
+    name: Package builds and its metadata renders
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: python -m pip install --upgrade build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
