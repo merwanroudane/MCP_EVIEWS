@@ -297,7 +297,15 @@
   .grp.g5 { --g-soft: var(--s5-soft); --g-ink: var(--s5-ink); --g-line: var(--s5-line); }
 
   /* ---------- plot gallery ---------- */
-  .gallery { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .gallery {
+    display: grid; gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    /* Each card sizes to its own figure. Without this, grid stretches
+       every card in a row to the tallest one -- and since the
+       correlogram is portrait while the others are landscape, the
+       shorter cards ended up with dead space under their captions. */
+    align-items: start;
+  }
   figure { margin: 0; border: 1px solid var(--f-line, var(--border)); border-radius: 6px; overflow: hidden; background: var(--ground); box-shadow: var(--shadow); }
   .install { box-shadow: var(--shadow); }
   .gallery figure:nth-child(1) { --f-line: var(--s1-line); --f-soft: var(--s1-soft); --f-ink: var(--s1-ink); }
