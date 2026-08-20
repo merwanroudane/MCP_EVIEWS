@@ -168,6 +168,27 @@ class EViews:
         else:
             self._session.run("wfsave")
 
+    def close_workfile(self) -> None:
+        """Close the active workfile, discarding unsaved changes."""
+        self._session.run("wfclose")
+
+    def close_all_workfiles(self, limit: int = 200) -> int:
+        """Close every open workfile and return how many were closed.
+
+        EViews caps the number of workfiles open at once, and a long-running
+        session that keeps creating them will eventually refuse to make another
+        with "Maximum number of Workfiles are already open". Calling this
+        between pieces of work keeps that from happening.
+        """
+        closed = 0
+        while closed < limit:
+            try:
+                self._session.run("wfclose")
+            except EViewsError:
+                break
+            closed += 1
+        return closed
+
     def workfile_info(self) -> dict:
         """Name, page, frequency, range, sample and object count."""
         get = self._session.get
@@ -276,14 +297,48 @@ class EViews:
 
         ``view`` selects an alternative view, written without the leading dot,
         for example ``"resids"``, ``"stats"``, ``"uroot"`` or
-        ``"wald c(2)=0"``. Graph views cannot be rendered as text; use
-        :meth:`export_object` for those.
+        ``"wald c(2)=0"``.
+
+        Most views freeze into a table, which is read directly. Some -- the
+        ARDL cointegrating relationship and error-correction results among
+        them -- freeze into a spool, which cannot be read over COM at all; for
+        those the frozen object is written out as text and returned instead.
+        Graph views produce neither, so use :meth:`export_object` for those.
         """
-        payload = self.table(object_name, view)
-        spec = ("%s.%s" % (object_name, view.strip())
-                if view.strip() else object_name)
-        body = render_table(payload, digits)
+        name = object_name.strip()
+        if not name:
+            raise ValueError("Provide an object name.")
+        spec = "%s.%s" % (name, view.strip()) if view.strip() else name
+        frozen = _FREEZE_PREFIX + uuid.uuid4().hex[:8]
+        self._session.run("freeze(%s) %s" % (frozen, spec))
+        try:
+            try:
+                body = render_table(self._session.get(frozen), digits)
+            except EViewsError:
+                body = self._frozen_as_text(frozen)
+        finally:
+            self._quiet_delete(frozen)
         return "%s\n%s\n%s" % (spec, "-" * min(len(spec) + 8, 60), body)
+
+    def _frozen_as_text(self, frozen: str) -> str:
+        """Read a frozen object that Get cannot handle, such as a spool."""
+        dump = self._session.workdir / ("mcp_%s.txt" % uuid.uuid4().hex[:8])
+        try:
+            self._session.run('%s.save(t=txt) %s' % (frozen, _quote(dump)))
+        except EViewsError as exc:
+            raise EViewsError(
+                "This view produced an object that cannot be read as text "
+                "(%s). If it is a graph, use export_object to save it to a "
+                "file." % exc) from None
+        if not dump.exists():
+            raise EViewsError(
+                "This view produced no readable table. If it is a graph, use "
+                "export_object to save it to a file.")
+        try:
+            raw = dump.read_text(encoding="utf-8", errors="replace")
+        finally:
+            dump.unlink(missing_ok=True)
+        return _tidy_text_dump(raw)
 
     def value(self, expression: str) -> Any:
         """Evaluate an expression and return a number or string.
@@ -487,20 +542,31 @@ class EViews:
 
     # -- files --------------------------------------------------------------
 
-    def import_file(self, path: str | pathlib.Path, options: str = "") -> list[str]:
+    def import_file(self, path: str | pathlib.Path, options: str = "",
+                    into_current_page: bool = False) -> list[str]:
         """Read an external data file (xlsx, csv, dta, sav, ...) into EViews.
 
-        Opens a new workfile when none is active, otherwise imports into the
-        current page. Returns the series present afterwards.
+        By default the file is opened as a new workfile sized to the data.
+        That is deliberate: importing into whatever page happens to be open
+        makes EViews truncate the file to the page length, so a 100-row file
+        read into an open 12-row page would quietly lose 88 rows and the
+        analysis that followed would be wrong with no warning anywhere.
+
+        Pass ``into_current_page=True`` to merge into the active page instead,
+        which is the right choice when adding variables to data already loaded.
         """
         target = pathlib.Path(path)
         if not target.exists():
             raise FileNotFoundError(str(target))
-        try:
-            self._session.get("=@wfname")
-            verb = "import"
-        except EViewsError:
-            verb = "wfopen"
+
+        verb = "wfopen"
+        if into_current_page:
+            try:
+                self._session.get("=@wfname")
+                verb = "import"
+            except EViewsError:
+                verb = "wfopen"  # nothing open to merge into
+
         command = "%s%s %s" % (
             verb, "(%s)" % options.strip() if options.strip() else "",
             _quote_path(target))
@@ -563,6 +629,31 @@ class EViews:
             self._session.run("delete %s" % name)
         except EViewsError:
             pass
+
+
+def _tidy_text_dump(raw: str) -> str:
+    """Clean up EViews text output written for a fixed-width page.
+
+    The file is padded to a fixed column width and separated by long rules of
+    equals signs, several in a row where the spool joins sections. Trailing
+    padding goes, over-long rules are shortened, and repeated blank lines and
+    rules are collapsed.
+    """
+    lines: list[str] = []
+    for line in raw.replace("\r\n", "\n").split("\n"):
+        stripped = line.rstrip()
+        if set(stripped.strip()) == {"="} and len(stripped.strip()) > 4:
+            stripped = "-" * 60
+        if not stripped and lines and not lines[-1]:
+            continue
+        if stripped.startswith("-" * 60) and lines and lines[-1].startswith("-" * 60):
+            continue
+        lines.append(stripped)
+    while lines and not lines[0]:
+        lines.pop(0)
+    while lines and not lines[-1]:
+        lines.pop()
+    return "\n".join(lines) if lines else "(empty)"
 
 
 def _require_pandas():

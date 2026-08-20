@@ -31,6 +31,7 @@ print("1. status / connection")
 print("=" * 70)
 out = s.eviews_status()
 check("eviews_status connects", "Connected to EViews" in out, out)
+s.close_workfile(close_all=True)  # keep repeated runs from filling EViews up
 
 print()
 print("=" * 70)
@@ -159,6 +160,7 @@ out = s.show("does_not_exist")
 check("show on a missing object fails cleanly", "error" in out.lower(), out)
 
 print()
+s.close_workfile(close_all=True)
 print("=" * 70)
 print("SUMMARY: %d passed, %d failed" % (len(PASS), len(FAIL)))
 if FAIL:

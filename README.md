@@ -13,6 +13,10 @@ Two things in one package:
 Built and tested against **EViews 13** on Windows; EViews 10–14 resolve
 correctly through the same COM interface.
 
+> **New to this?** The [**EViews Researcher Guide**](docs/EViews-Researcher-Guide.md)
+> takes you from a clean machine to a finished ARDL study, with every command and
+> every output verified against a real EViews session. No Python knowledge assumed.
+
 ## Install
 
 ```bash
@@ -74,12 +78,21 @@ R-squared     0.994702      Mean dependent var         131.080
 
 ```python
 ev.show("eq1", "wald c(2)=c(3)")   # coefficient restriction test
-ev.show("eq1", "resids")           # residuals
+ev.show("eq1", "resids(t)")        # residual table
 ev.show("eq1", "coefcov")          # coefficient covariance
+ev.show("eq1", "auto(2)")          # Breusch-Godfrey serial correlation
+ev.show("eq1", "white")            # White heteroskedasticity test
 ev.show("gdp", "uroot")            # unit root test
 ev.show("gdp", "correl")           # correlogram
-ev.show("var1", "impulse")         # impulse responses
+ev.show("ardl1", "cointrel")       # ARDL long-run relationship
+ev.show("var1", "impulse(t)")      # impulse response table
+ev.show("var1", "testexog")        # Granger causality
 ```
+
+`resids` and `impulse` draw graphs by default; the `(t)` variants ask EViews
+for the table form. Views that freeze into a spool rather than a table -- the
+ARDL cointegrating relationship among them -- cannot be read over COM at all,
+so `show` falls back to a text dump for those.
 
 For the numbers rather than the layout, `table()` returns raw rows at full
 double precision, and `value()` returns one number:
@@ -166,6 +179,7 @@ claude mcp add eviews -- eviews-mcp
 | `set_eviews_visible` | Show or hide the EViews window. |
 | `create_workfile` | New page by frequency and range. |
 | `open_workfile` / `save_workfile` | Open and save `.wf1` / `.wf2`. |
+| `close_workfile` | Close one or all open workfiles. |
 | `workfile_info` | Name, page, frequency, range, sample. |
 | `list_objects` | Inventory, filterable by EViews type. |
 | `set_sample` | Set the estimation sample. |
@@ -209,13 +223,18 @@ because they surprise people writing COM code directly.
 - **One COM thread.** MCP dispatches synchronous tools across a thread pool,
   and a COM pointer is not valid across apartments, so every EViews call is
   funnelled onto a single apartment-initialised thread.
+- **Importing into an open workfile truncates the file** to that page's length,
+  silently. Imports therefore create a new workfile by default; merging into the
+  current page is opt-in.
+- **EViews limits how many workfiles may be open** and then refuses to create
+  another, so `close_workfile` exists to keep long sessions healthy.
 
 ## Tests
 
 ```bash
-python tests/test_offline.py        # 16 tests, no EViews needed
+python tests/test_offline.py        # 20 tests, no EViews needed
 python tests/test_live.py           # 25 tests, drives the MCP tool layer
-python tests/test_live_client.py    # 36 tests, drives the library API
+python tests/test_live_client.py    # 39 tests, drives the library API
 ```
 
 `pytest` runs the offline suite by default; the live suites are opt-in because

@@ -43,7 +43,27 @@ def test_cell_text_blank_for_none():
 
 
 def test_cell_text_truncates_long_strings():
-    assert len(cell_text("x" * 200)) <= 40
+    assert len(cell_text("x" * 200)) <= 60
+    assert cell_text("x" * 200).endswith("...")
+
+
+def test_cell_text_truncation_is_ascii():
+    # Terminals here are not reliably UTF-8, so no fancy ellipsis character.
+    assert cell_text("x" * 200).isascii()
+
+
+def test_title_rows_are_not_truncated():
+    # A row holding one long cell is a title or note, and losing the end of
+    # "Included observations: 122 after adjustments" would lose a result.
+    note = "Included observations: 122 after adjustments end-of-line marker here"
+    out = render_table([(note, None, None), ("A", 1.0, 2.0)])
+    assert note in out
+
+
+def test_long_labels_in_data_rows_are_capped():
+    out = render_table([("x" * 200, 1.0, 2.0), ("B", 3.0, 4.0)])
+    assert "..." in out
+    assert max(len(line) for line in out.splitlines()) < 120
 
 
 def test_render_table_aligns_and_keeps_separators():
@@ -85,6 +105,19 @@ def test_render_series_columns_truncates_politely():
     out = render_series_columns(["v"], rows, None, max_rows=50)
     assert "500 observations total" in out
     assert "..." in out
+
+
+def test_small_max_rows_actually_shrinks_output():
+    # A fixed tail slice used to invert the head slice, so a small max_rows
+    # produced more rows than a large one.
+    rows = [(float(i),) for i in range(100)]
+    for cap in (2, 5, 8, 20):
+        out = render_series_columns(["v"], rows, None, max_rows=cap)
+        data_lines = [ln for ln in out.splitlines()
+                      if ln.strip() and not ln.startswith("-")
+                      and "observations total" not in ln]
+        # header + at most cap data rows + the "..." separator
+        assert len(data_lines) <= cap + 2, (cap, len(data_lines))
 
 
 def test_to_csv_is_full_precision():

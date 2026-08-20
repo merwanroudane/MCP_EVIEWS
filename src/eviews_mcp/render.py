@@ -10,7 +10,12 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
-MAX_CELL = 40
+#: Width cap for a cell sharing a row with others, so one long label cannot
+#: blow out every column. Title and note rows, which occupy a row on their
+#: own, are exempt -- truncating "Included observations: 122 after adjustments"
+#: would throw away part of the result.
+MAX_CELL = 60
+MAX_CELL_SOLO = 300
 
 
 def format_number(value: float, digits: int = 6) -> str:
@@ -32,7 +37,8 @@ def format_number(value: float, digits: int = 6) -> str:
     return text
 
 
-def cell_text(value: Any, digits: int = 6) -> str:
+def cell_text(value: Any, digits: int = 6, max_width: int = MAX_CELL) -> str:
+    """Render one cell. ``max_width`` caps text; numbers are never truncated."""
     if value is None:
         return ""
     if isinstance(value, bool):
@@ -42,8 +48,10 @@ def cell_text(value: Any, digits: int = 6) -> str:
     if isinstance(value, float):
         return format_number(value, digits)
     text = str(value).strip()
-    if len(text) > MAX_CELL:
-        text = text[: MAX_CELL - 1] + "…"
+    if len(text) > max_width:
+        # Plain ASCII, because this output is read in terminals whose encoding
+        # is not always UTF-8.
+        text = text[: max_width - 3] + "..."
     return text
 
 
@@ -77,12 +85,24 @@ def render_table(rows: Any, digits: int = 6) -> str:
     for row in grid:
         row.extend([None] * (width - len(row)))
 
-    text_grid = [[cell_text(c, digits) for c in row] for row in grid]
+    # A row holding a single populated cell is a title, heading or footnote
+    # rather than data. Such rows are written out full width and, crucially,
+    # excluded from the column measurements -- otherwise a long note like
+    # "MacKinnon (1996) one-sided p-values" would pad column 0 across the whole
+    # table and push the numbers far off to the right.
+    is_solo = [sum(1 for c in row if c is not None) <= 1 for row in grid]
 
-    # A column is numeric if every populated original cell in it is a number.
+    text_grid = []
+    for row, solo in zip(grid, is_solo):
+        cap = MAX_CELL_SOLO if solo else MAX_CELL
+        text_grid.append([cell_text(c, digits, cap) for c in row])
+
+    # A column is numeric if every populated cell in it, ignoring solo rows,
+    # is a number.
     numeric_col = []
     for col in range(width):
-        populated = [row[col] for row in grid if row[col] is not None]
+        populated = [row[col] for row, solo in zip(grid, is_solo)
+                     if not solo and row[col] is not None]
         numeric_col.append(
             bool(populated)
             and all(isinstance(c, (int, float)) and not isinstance(c, bool)
@@ -90,14 +110,18 @@ def render_table(rows: Any, digits: int = 6) -> str:
         )
 
     widths = [
-        max((len(text_grid[r][col]) for r in range(len(text_grid))), default=0)
+        max((len(text_grid[r][col])
+             for r in range(len(text_grid)) if not is_solo[r]), default=0)
         for col in range(width)
     ]
 
     lines = []
-    for row in text_grid:
+    for row, solo in zip(text_grid, is_solo):
         if not any(cell for cell in row):
             lines.append("")
+            continue
+        if solo:
+            lines.append(next(cell for cell in row if cell).rstrip())
             continue
         parts = []
         for col, cell in enumerate(row):
@@ -124,10 +148,16 @@ def render_series_columns(names: Sequence[str], rows: Any, labels: Sequence[str]
     """Render series values as a labelled column layout, truncating politely."""
     grid = _normalise(rows)
     total = len(grid)
+    max_rows = max(2, max_rows)
     truncated = total > max_rows
     if truncated:
-        head = grid[: max_rows - 20]
-        tail = grid[-20:]
+        # Keep a slice of the tail so the end of the sample stays visible, but
+        # never let it swallow the whole budget: at max_rows=8 a fixed 20-row
+        # tail would slice the head negatively and show more rows, not fewer.
+        tail_rows = min(20, max(1, max_rows // 4))
+        head_rows = max(1, max_rows - tail_rows)
+        head = grid[:head_rows]
+        tail = grid[-tail_rows:]
     else:
         head, tail = grid, []
 

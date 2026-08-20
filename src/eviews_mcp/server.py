@@ -158,6 +158,21 @@ def save_workfile(path: str = "") -> str:
 
 @mcp.tool()
 @guard
+def close_workfile(close_all: bool = False) -> str:
+    """Close the active workfile, or all of them, discarding unsaved changes.
+
+    EViews limits how many workfiles can be open at once, and refuses to create
+    another once that limit is reached. Close them when finished with a piece
+    of work, especially in a long session.
+    """
+    if close_all:
+        return "Closed %d workfile(s)." % _client().close_all_workfiles()
+    _client().close_workfile()
+    return "Closed the active workfile."
+
+
+@mcp.tool()
+@guard
 def workfile_info() -> str:
     """Describe the active workfile: name, page, frequency, range and sample."""
     info = _client().workfile_info()
@@ -381,16 +396,22 @@ def write_series(name: str, values: str, sample: str = "@all",
 
 @mcp.tool()
 @guard
-def import_data(path: str, options: str = "") -> str:
-    """Read an external data file into the active workfile.
+def import_data(path: str, options: str = "",
+                into_current_page: bool = False) -> str:
+    """Read an external data file into EViews.
 
     Handles the formats EViews reads natively, including .xlsx, .xls, .csv,
-    .txt, .dta, .sav and .rdata. When no workfile is open, one is created to
-    fit the file.
+    .txt, .dta, .sav and .rdata.
 
+    By default the file becomes a new workfile sized to the data. Importing
+    into an already-open page makes EViews truncate the file to that page's
+    length, silently dropping rows, so that is not the default.
+
+    into_current_page: merge into the active page instead, which is what you
+        want when adding more variables to data that is already loaded.
     options: raw EViews options, e.g. "range=Sheet2" or "namepos=first".
     """
-    found = _client().import_file(path, options)
+    found = _client().import_file(path, options, into_current_page)
     listing = ("\nSeries now present: %s" % ", ".join(found[:40])) if found else ""
     return "Imported %s.%s" % (path, listing)
 

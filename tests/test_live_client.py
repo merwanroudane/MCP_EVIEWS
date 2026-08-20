@@ -25,6 +25,9 @@ def check(label, condition, detail=""):
 
 
 ev = EViews()
+# Repeated runs would otherwise accumulate workfiles until EViews
+# refuses to create another one.
+ev.close_all_workfiles()
 
 print("== connection ==")
 check("version reported", ev.version.startswith("1"), ev.version)
@@ -156,6 +159,29 @@ try:
     check("unsupported format is reported, not silently skipped", False)
 except EViewsError:
     check("unsupported format is reported, not silently skipped", True)
+
+print("\n== spool views are readable, not just tables ==")
+# ARDL cointegrating relationship freezes into a spool, which Get cannot read;
+# show() falls back to a text dump for these.
+ev.create_workfile("q", "1996q1", "2020q4", name="spool")
+ev.run("""
+rndseed 99
+series a = @cumsum(@nrnd)/10 + 5
+series b = 1.2 + 0.5*a + 0.2*@nrnd
+equation ardl_t.ardl(deplags=4, reglags=4) b a
+""")
+try:
+    out = ev.show("ardl_t", "cointrel")
+    check("spool view returns text", "CE =" in out or "Variable" in out, out[:400])
+    check("spool text is not empty", len(out.strip()) > 60, out[:200])
+except EViewsError as exc:
+    check("spool view returns text", False, exc)
+
+try:
+    ev.show("ardl_t", "not_a_real_view")
+    check("invalid view still raises", False)
+except EViewsError:
+    check("invalid view still raises", True)
 
 print("\n== errors are informative ==")
 try:
