@@ -11,26 +11,43 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap">
 <style>
-  /* Deliberately a single light theme: EViews output is white-ground, and the
-     plots on this page are real EViews exports, so a dark surface would fight
-     the artwork it frames. Every colour is painted explicitly. */
+  /* A categorical series palette -- the same device a chart uses to tell one
+     series from another -- carried through the page so each section reads as
+     its own colour. Light throughout: the plots below are real EViews exports
+     on a white ground, and a dark surface would fight the artwork it frames. */
   :root {
+    --s1: #6d4aff;  --s1-soft: #f0edff;  --s1-line: #cfc4ff;  --s1-ink: #4526cc;
+    --s2: #1e7fd4;  --s2-soft: #e4f0fb;  --s2-line: #b3d6f2;  --s2-ink: #14538c;
+    --s3: #0e9c93;  --s3-soft: #ddf4f1;  --s3-line: #a5e0da;  --s3-ink: #086b65;
+    --s4: #2e9e4f;  --s4-soft: #e6f6ea;  --s4-line: #b2e0be;  --s4-ink: #1d6a35;
+    --s5: #e08a00;  --s5-soft: #fdf2de;  --s5-line: #f2d3a0;  --s5-ink: #96590a;
+    --s6: #e8455f;  --s6-soft: #fdeaee;  --s6-line: #f7c0ca;  --s6-ink: #a52338;
+
     --ground:      #ffffff;
-    --panel:       #f4f7fa;
-    --panel-warm:  #fdf7f1;
-    --ink:         #16202b;
-    --muted:       #5a6b7b;
-    --faint:       #8496a5;
-    --accent:      #2c5f9e;   /* the blue EViews draws its first series in */
-    --accent-soft: #e7eff8;
-    --warm:        #c05621;   /* the orange of its second series */
-    --warm-soft:   #fbeade;
-    --green:       #4e7a3a;   /* its third */
-    --border:      #d9e1e8;
-    --border-firm: #b9c6d1;
-    --shadow: 0 1px 2px rgba(22,32,43,.05), 0 4px 16px rgba(22,32,43,.05);
+    --panel:       #f6f8fc;
+    --ink:         #172033;
+    --muted:       #5a6880;
+    --faint:       #8a95ab;
+    --border:      #e0e6f0;
+    --border-firm: #c3cddd;
+
+    /* the active hue, re-pointed per section */
+    --hue: var(--s2); --hue-soft: var(--s2-soft);
+    --hue-line: var(--s2-line); --hue-ink: var(--s2-ink);
+
+    --shadow: 0 1px 2px rgba(23,32,51,.05), 0 6px 20px rgba(23,32,51,.06);
     --measure: 74ch;
   }
+  .hue-1 { --hue: var(--s1); --hue-soft: var(--s1-soft); --hue-line: var(--s1-line); --hue-ink: var(--s1-ink); }
+  .hue-2 { --hue: var(--s2); --hue-soft: var(--s2-soft); --hue-line: var(--s2-line); --hue-ink: var(--s2-ink); }
+  .hue-3 { --hue: var(--s3); --hue-soft: var(--s3-soft); --hue-line: var(--s3-line); --hue-ink: var(--s3-ink); }
+  .hue-4 { --hue: var(--s4); --hue-soft: var(--s4-soft); --hue-line: var(--s4-line); --hue-ink: var(--s4-ink); }
+  .hue-5 { --hue: var(--s5); --hue-soft: var(--s5-soft); --hue-line: var(--s5-line); --hue-ink: var(--s5-ink); }
+  .hue-6 { --hue: var(--s6); --hue-soft: var(--s6-soft); --hue-line: var(--s6-line); --hue-ink: var(--s6-ink); }
+
+  /* the palette itself, declared once at the top of the page */
+  .spectrum { display: flex; height: 5px; }
+  .spectrum span { flex: 1; }
 
   *, *::before, *::after { box-sizing: border-box; }
 
@@ -65,15 +82,16 @@
   h4 { font-size: 1.02rem; font-weight: 600; }
   p { margin: 0; }
 
-  a { color: var(--accent); text-decoration-color: rgba(44,95,158,.35); text-underline-offset: 2px; }
-  a:hover { text-decoration-color: var(--accent); }
+  a { color: var(--hue-ink); text-decoration-color: var(--hue-line); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--hue); }
   a:focus-visible, button:focus-visible {
-    outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+    outline: 2px solid var(--hue); outline-offset: 3px; border-radius: 2px;
   }
 
   code, pre, .mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; }
   :not(pre) > code {
-    background: var(--panel); border: 1px solid var(--border);
+    background: var(--hue-soft); border: 1px solid var(--hue-line);
+    color: var(--hue-ink);
     padding: .08em .36em; border-radius: 3px; font-size: .87em;
   }
 
@@ -89,19 +107,45 @@
     font-family: "IBM Plex Mono", monospace; font-weight: 500;
     font-size: .95rem; color: var(--ink); text-decoration: none; white-space: nowrap;
   }
-  .nav-links { display: flex; gap: 1.15rem; margin-left: auto; overflow-x: auto; }
+  .nav-links {
+    display: flex; gap: 1.15rem; margin-left: auto; overflow-x: auto;
+    scrollbar-width: none; -ms-overflow-style: none;
+  }
+  .nav-links::-webkit-scrollbar { display: none; }
   .nav-links a {
     font-size: .87rem; color: var(--muted); text-decoration: none; white-space: nowrap;
   }
-  .nav-links a:hover { color: var(--accent); }
+  .nav-links a:nth-child(6n+1):hover { color: var(--s1); }
+  .nav-links a:nth-child(6n+2):hover { color: var(--s2); }
+  .nav-links a:nth-child(6n+3):hover { color: var(--s3); }
+  .nav-links a:nth-child(6n+4):hover { color: var(--s4); }
+  .nav-links a:nth-child(6n+5):hover { color: var(--s5); }
+  .nav-links a:nth-child(6n+6):hover { color: var(--s6); }
 
   /* ---------- header ---------- */
-  .head { padding: 4rem 0 3rem; border-bottom: 1px solid var(--border); }
+  .head {
+    padding: 4rem 0 3rem; border-bottom: 1px solid var(--border);
+    background:
+      radial-gradient(58rem 22rem at 6% -12%, var(--s1-soft) 0%, transparent 62%),
+      radial-gradient(52rem 20rem at 52% -16%, var(--s2-soft) 0%, transparent 60%),
+      radial-gradient(46rem 20rem at 97% -8%, var(--s3-soft) 0%, transparent 58%),
+      var(--ground);
+  }
   .eyebrow {
     font-size: .74rem; letter-spacing: .13em; text-transform: uppercase;
-    color: var(--warm); font-weight: 600; margin-bottom: 1rem;
+    color: var(--s1-ink); font-weight: 700; margin-bottom: 1rem;
+    display: inline-flex; align-items: center; gap: .55rem;
+  }
+  .eyebrow::before {
+    content: ""; width: 1.7rem; height: 3px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--s1), var(--s3));
   }
   .head h1 { font-size: clamp(2.4rem, 5.5vw, 3.5rem); font-weight: 700; letter-spacing: -.02em; }
+  .head h1 em {
+    font-style: normal;
+    background: linear-gradient(96deg, var(--s1) 8%, var(--s2) 52%, var(--s3) 94%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
   .lede {
     font-size: 1.2rem; color: var(--muted); margin-top: 1.1rem; max-width: 60ch;
   }
@@ -119,8 +163,13 @@
     text-decoration: none;
   }
   .pill b { color: var(--ink); font-weight: 600; }
-  .pill.on { background: var(--accent-soft); border-color: #a9c4e2; color: #1d4472; }
-  .pill.on b { color: #163659; }
+  .pills .pill:nth-child(1) { background: var(--s1-soft); border-color: var(--s1-line); color: var(--s1-ink); }
+  .pills .pill:nth-child(2) { background: var(--s2-soft); border-color: var(--s2-line); color: var(--s2-ink); }
+  .pills .pill:nth-child(3) { background: var(--s3-soft); border-color: var(--s3-line); color: var(--s3-ink); }
+  .pills .pill:nth-child(4) { background: var(--s4-soft); border-color: var(--s4-line); color: var(--s4-ink); }
+  .pills .pill:nth-child(5) { background: var(--s5-soft); border-color: var(--s5-line); color: var(--s5-ink); }
+  .pills .pill:nth-child(6) { background: var(--s6-soft); border-color: var(--s6-line); color: var(--s6-ink); }
+  .pills .pill b { color: inherit; font-weight: 700; }
 
   .cta { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; align-items: center; }
   .install {
@@ -137,16 +186,22 @@
     padding: .65rem 1.1rem; font-size: .92rem; font-weight: 500;
     color: var(--ink); text-decoration: none; background: var(--ground);
   }
-  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:hover { border-color: var(--s2); color: var(--s2-ink); background: var(--s2-soft); }
   .btn.primary {
-    background: var(--accent); border-color: var(--accent); color: #fff;
+    background: linear-gradient(96deg, var(--s1), var(--s2));
+    border-color: transparent; color: #fff;
   }
-  .btn.primary:hover { background: #24507f; border-color: #24507f; color: #fff; }
+  .btn.primary:hover { filter: saturate(115%) brightness(1.07); color: #fff; border-color: transparent; }
 
   /* ---------- sections ---------- */
   section { padding: 3.5rem 0; border-bottom: 1px solid var(--border); }
   section:last-of-type { border-bottom: 0; }
   .sec-head { margin-bottom: 1.75rem; }
+  .sec-head h2 { display: flex; align-items: baseline; gap: .7rem; }
+  .sec-head h2::before {
+    content: ""; flex: none; width: .62rem; height: .62rem; border-radius: 2px;
+    background: var(--hue); transform: translateY(-.1rem);
+  }
   .sec-head p { color: var(--muted); margin-top: .6rem; max-width: var(--measure); }
   .stack > * + * { margin-top: 1.1rem; }
 
@@ -164,18 +219,18 @@
   pre.term { background: var(--ink); color: #dce6f0; border-color: var(--ink); }
   pre.term .c { color: #8aa2b8; }
   .out {
-    border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--hue-line); border-radius: 6px; overflow: hidden;
     box-shadow: var(--shadow); background: var(--ground);
   }
   .out-bar {
     display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    padding: .55rem .9rem; background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    font-size: .78rem; color: var(--muted);
+    padding: .55rem .9rem; background: var(--hue-soft);
+    border-bottom: 1px solid var(--hue-line);
+    font-size: .78rem; color: var(--hue-ink);
   }
   .out-bar .tag {
     font-family: "IBM Plex Mono", monospace; font-size: .76rem;
-    color: var(--accent); font-weight: 500;
+    color: var(--hue-ink); font-weight: 600;
   }
   .out-bar .src { font-size: .72rem; color: var(--faint); }
   .out pre { border: 0; border-radius: 0; background: var(--ground); font-variant-numeric: tabular-nums; }
@@ -190,10 +245,15 @@
     content: counter(s); position: absolute; left: 0; top: -.1rem;
     width: 2.1rem; height: 2.1rem; border-radius: 50%;
     display: grid; place-items: center;
-    background: var(--accent-soft); color: #1d4472;
-    border: 1px solid #a9c4e2;
-    font-family: "IBM Plex Mono", monospace; font-size: .85rem; font-weight: 500;
+    background: var(--st-soft, var(--hue-soft)); color: var(--st-ink, var(--hue-ink));
+    border: 1px solid var(--st-line, var(--hue-line));
+    font-family: "IBM Plex Mono", monospace; font-size: .9rem; font-weight: 700;
   }
+  ol.steps > li:nth-child(1) { --st-soft: var(--s1-soft); --st-ink: var(--s1-ink); --st-line: var(--s1-line); }
+  ol.steps > li:nth-child(2) { --st-soft: var(--s2-soft); --st-ink: var(--s2-ink); --st-line: var(--s2-line); }
+  ol.steps > li:nth-child(3) { --st-soft: var(--s3-soft); --st-ink: var(--s3-ink); --st-line: var(--s3-line); }
+  ol.steps > li:nth-child(4) { --st-soft: var(--s4-soft); --st-ink: var(--s4-ink); --st-line: var(--s4-line); }
+  ol.steps > li:nth-child(5) { --st-soft: var(--s5-soft); --st-ink: var(--s5-ink); --st-line: var(--s5-line); }
   ol.steps > li::after {
     content: ""; position: absolute; left: 1.05rem; top: 2.3rem; bottom: .25rem;
     width: 1px; background: var(--border);
@@ -207,59 +267,85 @@
   .tbl-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
   table { border-collapse: collapse; width: 100%; font-size: .9rem; }
   thead th {
-    text-align: left; background: var(--panel); color: var(--ink);
-    font-weight: 600; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase;
-    padding: .7rem .9rem; border-bottom: 1px solid var(--border-firm); white-space: nowrap;
+    text-align: left; background: var(--hue-soft); color: var(--hue-ink);
+    font-weight: 700; font-size: .78rem; letter-spacing: .04em; text-transform: uppercase;
+    padding: .7rem .9rem; border-bottom: 1px solid var(--hue-line); white-space: nowrap;
   }
   tbody td { padding: .65rem .9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
   tbody tr:last-child td { border-bottom: 0; }
   tbody tr:nth-child(even) { background: #fafcfd; }
   td code { white-space: nowrap; }
   .grp td {
-    background: var(--accent-soft) !important; font-weight: 600; font-size: .78rem;
-    letter-spacing: .05em; text-transform: uppercase; color: #1d4472;
+    font-weight: 700; font-size: .78rem;
+    letter-spacing: .05em; text-transform: uppercase;
+    background: var(--g-soft) !important; color: var(--g-ink);
+    border-bottom: 1px solid var(--g-line);
   }
+  .grp.g1 { --g-soft: var(--s1-soft); --g-ink: var(--s1-ink); --g-line: var(--s1-line); }
+  .grp.g2 { --g-soft: var(--s2-soft); --g-ink: var(--s2-ink); --g-line: var(--s2-line); }
+  .grp.g3 { --g-soft: var(--s3-soft); --g-ink: var(--s3-ink); --g-line: var(--s3-line); }
+  .grp.g4 { --g-soft: var(--s4-soft); --g-ink: var(--s4-ink); --g-line: var(--s4-line); }
+  .grp.g5 { --g-soft: var(--s5-soft); --g-ink: var(--s5-ink); --g-line: var(--s5-line); }
 
   /* ---------- plot gallery ---------- */
   .gallery { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-  figure { margin: 0; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--ground); box-shadow: var(--shadow); }
+  figure { margin: 0; border: 1px solid var(--f-line, var(--border)); border-radius: 6px; overflow: hidden; background: var(--ground); box-shadow: var(--shadow); }
+  .gallery figure:nth-child(1) { --f-line: var(--s1-line); --f-soft: var(--s1-soft); --f-ink: var(--s1-ink); }
+  .gallery figure:nth-child(2) { --f-line: var(--s2-line); --f-soft: var(--s2-soft); --f-ink: var(--s2-ink); }
+  .gallery figure:nth-child(3) { --f-line: var(--s3-line); --f-soft: var(--s3-soft); --f-ink: var(--s3-ink); }
+  .gallery figure:nth-child(4) { --f-line: var(--s4-line); --f-soft: var(--s4-soft); --f-ink: var(--s4-ink); }
+  .gallery figure:nth-child(5) { --f-line: var(--s5-line); --f-soft: var(--s5-soft); --f-ink: var(--s5-ink); }
+  .gallery figure:nth-child(6) { --f-line: var(--s6-line); --f-soft: var(--s6-soft); --f-ink: var(--s6-ink); }
   figure img { display: block; width: 100%; height: auto; background: #fff; }
-  figcaption { padding: .75rem .95rem; border-top: 1px solid var(--border); font-size: .82rem; color: var(--muted); }
-  figcaption b { display: block; color: var(--ink); font-weight: 600; font-size: .88rem; margin-bottom: .15rem; }
+  figcaption { padding: .75rem .95rem; border-top: 1px solid var(--f-line); background: var(--f-soft); font-size: .82rem; color: var(--muted); }
+  figcaption b { display: block; color: var(--f-ink); font-weight: 700; font-size: .88rem; margin-bottom: .15rem; }
   figcaption code { font-size: .78rem; }
 
   /* ---------- callouts ---------- */
   .note {
-    border-left: 3px solid var(--warm); background: var(--panel-warm);
+    border-left: 3px solid var(--s5); background: var(--s5-soft);
     padding: 1rem 1.15rem; border-radius: 0 5px 5px 0; font-size: .93rem;
   }
-  .note b { color: #8a3d13; }
-  .note.blue { border-left-color: var(--accent); background: var(--accent-soft); }
-  .note.blue b { color: #1d4472; }
+  .note b { color: var(--s5-ink); }
+  .note code { background: rgba(255,255,255,.7); }
+  .note.blue { border-left-color: var(--s3); background: var(--s3-soft); }
+  .note.blue b { color: var(--s3-ink); }
+  .note.rose { border-left-color: var(--s6); background: var(--s6-soft); }
+  .note.rose b { color: var(--s6-ink); }
 
   .cards { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .card {
-    border: 1px solid var(--border); border-radius: 6px; padding: 1.15rem 1.25rem;
-    background: var(--ground);
+    border: 1px solid var(--c-line, var(--border)); border-radius: 6px;
+    padding: 1.15rem 1.25rem; background: var(--c-soft, var(--ground));
   }
+  .cards .card:nth-child(1) { --c-line: var(--s1-line); --c-soft: var(--s1-soft); --c-ink: var(--s1-ink); }
+  .cards .card:nth-child(2) { --c-line: var(--s3-line); --c-soft: var(--s3-soft); --c-ink: var(--s3-ink); }
+  .cards .card:nth-child(3) { --c-line: var(--s5-line); --c-soft: var(--s5-soft); --c-ink: var(--s5-ink); }
   .card h4 { margin-bottom: .4rem; }
   .card p { font-size: .9rem; color: var(--muted); }
   .card .k {
-    font-family: "IBM Plex Mono", monospace; font-size: .72rem; color: var(--warm);
-    text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; font-weight: 500;
+    font-family: "IBM Plex Mono", monospace; font-size: .72rem; color: var(--c-ink, var(--muted));
+    text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; font-weight: 600;
   }
+  .card h4 { color: var(--c-ink, var(--ink)); }
+  .card pre { background: rgba(255,255,255,.78); border-color: var(--c-line); }
+  .card code { background: rgba(255,255,255,.78); }
 
   /* ---------- author ---------- */
   .author {
     display: flex; flex-wrap: wrap; gap: 1.75rem; align-items: flex-start;
-    border: 1px solid var(--border); border-radius: 8px;
-    padding: 1.75rem; background: var(--panel);
+    border: 1px solid var(--s1-line); border-radius: 8px; padding: 1.75rem;
+    background:
+      radial-gradient(30rem 14rem at 0% 0%, var(--s1-soft) 0%, transparent 70%),
+      radial-gradient(26rem 14rem at 100% 100%, var(--s3-soft) 0%, transparent 70%),
+      var(--ground);
   }
   .author .mark {
     width: 62px; height: 62px; border-radius: 50%; flex: none;
     display: grid; place-items: center;
-    background: var(--ground); border: 1px solid var(--border-firm);
-    font-family: "Source Serif 4", serif; font-size: 1.5rem; font-weight: 700; color: var(--accent);
+    background: linear-gradient(140deg, var(--s1), var(--s2) 55%, var(--s3));
+    border: 0; color: #ffffff;
+    font-family: "Source Serif 4", serif; font-size: 1.5rem; font-weight: 700;
   }
   .author .who { flex: 1 1 22rem; }
   .author .who h3 { font-size: 1.3rem; }
@@ -284,6 +370,8 @@
 </head>
 <body>
 
+<div class="spectrum" aria-hidden="true"><span style="background:var(--s1)"></span><span style="background:var(--s2)"></span><span style="background:var(--s3)"></span><span style="background:var(--s4)"></span><span style="background:var(--s5)"></span><span style="background:var(--s6)"></span></div>
+
 <nav class="nav">
   <div class="wrap nav-in">
     <a class="nav-brand" href="#top">eviews-mcp</a>
@@ -304,7 +392,7 @@
 <header class="head" id="top">
   <div class="wrap">
     <div class="eyebrow">Econometrics automation for Windows</div>
-    <h1>eviews-mcp</h1>
+    <h1>eviews<em>-mcp</em></h1>
     <p class="lede">
       Drive <strong>EViews 13</strong> from Python — or let an AI assistant drive it for you.
       A Model Context Protocol server and a Python library, sharing one engine.
@@ -313,7 +401,7 @@
     <p class="byline">Created and maintained by <strong>Dr Merwan Roudane</strong></p>
 
     <div class="pills">
-      <a class="pill on" href="https://pypi.org/project/eviews-mcp/"><b>PyPI</b> v1.2.0</a>
+      <a class="pill" href="https://pypi.org/project/eviews-mcp/"><b>PyPI</b> v1.2.0</a>
       <span class="pill"><b>Licence</b> MIT</span>
       <span class="pill"><b>Python</b> 3.10+</span>
       <span class="pill"><b>Platform</b> Windows</span>
@@ -331,7 +419,7 @@
 </header>
 
 <!-- ============ HOW IT WORKS ============ -->
-<section id="how">
+<section id="how" class="hue-1">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>How it works</h2>
@@ -351,27 +439,27 @@
         </defs>
         <g font-family="IBM Plex Sans, sans-serif">
           <!-- you -->
-          <rect x="8" y="52" width="150" height="72" rx="7" fill="#ffffff" stroke="#b9c6d1"></rect>
+          <rect x="8" y="52" width="150" height="72" rx="7" fill="#fdf2de" stroke="#f2d3a0"></rect>
           <text x="83" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#16202b">You</text>
           <text x="83" y="103" text-anchor="middle" font-size="12" fill="#5a6b7b">plain English</text>
 
           <!-- assistant -->
-          <rect x="204" y="52" width="170" height="72" rx="7" fill="#e7eff8" stroke="#a9c4e2"></rect>
-          <text x="289" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#1d4472">AI assistant</text>
-          <text x="289" y="103" text-anchor="middle" font-size="12" fill="#2c5f9e">Claude, or any MCP client</text>
+          <rect x="204" y="52" width="170" height="72" rx="7" fill="#e4f0fb" stroke="#b3d6f2"></rect>
+          <text x="289" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#14538c">AI assistant</text>
+          <text x="289" y="103" text-anchor="middle" font-size="12" fill="#1e7fd4">Claude, or any MCP client</text>
 
           <!-- server -->
-          <rect x="420" y="52" width="170" height="72" rx="7" fill="#fbeade" stroke="#e0b394"></rect>
-          <text x="505" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#8a3d13">eviews-mcp</text>
-          <text x="505" y="103" text-anchor="middle" font-size="12" fill="#c05621">this package</text>
+          <rect x="420" y="52" width="170" height="72" rx="7" fill="#f0edff" stroke="#cfc4ff"></rect>
+          <text x="505" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#4526cc">eviews-mcp</text>
+          <text x="505" y="103" text-anchor="middle" font-size="12" fill="#6d4aff">this package</text>
 
           <!-- eviews -->
-          <rect x="636" y="52" width="150" height="72" rx="7" fill="#ffffff" stroke="#b9c6d1"></rect>
+          <rect x="636" y="52" width="150" height="72" rx="7" fill="#e6f6ea" stroke="#b2e0be"></rect>
           <text x="711" y="82" text-anchor="middle" font-size="15" font-weight="600" fill="#16202b">EViews 13</text>
           <text x="711" y="103" text-anchor="middle" font-size="12" fill="#5a6b7b">the real thing</text>
 
           <!-- workfile -->
-          <rect x="832" y="52" width="100" height="72" rx="7" fill="#f4f7fa" stroke="#b9c6d1" stroke-dasharray="4 3"></rect>
+          <rect x="832" y="52" width="100" height="72" rx="7" fill="#ddf4f1" stroke="#a5e0da" stroke-dasharray="4 3"></rect>
           <text x="882" y="82" text-anchor="middle" font-size="14" font-weight="600" fill="#16202b">.wf1</text>
           <text x="882" y="103" text-anchor="middle" font-size="12" fill="#5a6b7b">workfile</text>
 
@@ -422,7 +510,7 @@
 </section>
 
 <!-- ============ INSTALL ============ -->
-<section id="install">
+<section id="install" class="hue-2">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>Installation</h2>
@@ -468,7 +556,7 @@ pip install "eviews-mcp[pandas]"</pre>
 </section>
 
 <!-- ============ CONNECT ============ -->
-<section id="connect">
+<section id="connect" class="hue-3">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>Connect an AI assistant</h2>
@@ -514,7 +602,7 @@ Active workfile: none open (use create_workfile or open_workfile)</pre>
 </section>
 
 <!-- ============ WORKED STUDY ============ -->
-<section id="study">
+<section id="study" class="hue-4">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>A complete study, end to end</h2>
@@ -679,7 +767,7 @@ Obs*R-squared       3.05184      Prob. Chi-Square(2)    0.217421</pre>
 </section>
 
 <!-- ============ PLOTS ============ -->
-<section id="plots">
+<section id="plots" class="hue-5">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>Plots</h2>
@@ -727,7 +815,7 @@ Obs*R-squared       3.05184      Prob. Chi-Square(2)    0.217421</pre>
 </section>
 
 <!-- ============ TOOLS ============ -->
-<section id="tools">
+<section id="tools" class="hue-1">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>Tool reference</h2>
@@ -741,12 +829,12 @@ Obs*R-squared       3.05184      Prob. Chi-Square(2)    0.217421</pre>
       <table>
         <thead><tr><th style="width:16rem">Tool</th><th>Purpose</th></tr></thead>
         <tbody>
-          <tr class="grp"><td colspan="2">Session</td></tr>
+          <tr class="grp g1"><td colspan="2">Session</td></tr>
           <tr><td><code>eviews_status</code></td><td>Connection, version and active workfile. Start here when debugging.</td></tr>
           <tr><td><code>reset_eviews</code></td><td>Discard the instance and start a clean one.</td></tr>
           <tr><td><code>set_eviews_visible</code></td><td>Show or hide the EViews window.</td></tr>
 
-          <tr class="grp"><td colspan="2">Workfiles</td></tr>
+          <tr class="grp g2"><td colspan="2">Workfiles</td></tr>
           <tr><td><code>create_workfile</code></td><td>New page by frequency and range, e.g. quarterly 1990Q1–2020Q4.</td></tr>
           <tr><td><code>open_workfile</code></td><td>Open an existing <code>.wf1</code> or <code>.wf2</code>.</td></tr>
           <tr><td><code>save_workfile</code></td><td>Save, optionally to a new path.</td></tr>
@@ -755,17 +843,17 @@ Obs*R-squared       3.05184      Prob. Chi-Square(2)    0.217421</pre>
           <tr><td><code>list_objects</code></td><td>Inventory, filterable by EViews type.</td></tr>
           <tr><td><code>set_sample</code></td><td>Restrict the estimation sample.</td></tr>
 
-          <tr class="grp"><td colspan="2">Running code</td></tr>
+          <tr class="grp g3"><td colspan="2">Running code</td></tr>
           <tr><td><code>run_eviews_code</code></td><td><b>Main tool.</b> Runs a block of EViews program code — loops, conditionals, subroutines.</td></tr>
           <tr><td><code>run_program_file</code></td><td>Run an existing <code>.prg</code>, with arguments.</td></tr>
           <tr><td><code>command</code></td><td>A single command line.</td></tr>
 
-          <tr class="grp"><td colspan="2">Reading results</td></tr>
+          <tr class="grp g4"><td colspan="2">Reading results</td></tr>
           <tr><td><code>show</code></td><td><b>Renders any object or view as text.</b> This is how results are read.</td></tr>
           <tr><td><code>evaluate</code></td><td>One value from an expression, e.g. <code>eq1.@r2</code>.</td></tr>
           <tr><td><code>describe_object</code></td><td>Object type, plus summary statistics for a series.</td></tr>
 
-          <tr class="grp"><td colspan="2">Data</td></tr>
+          <tr class="grp g5"><td colspan="2">Data</td></tr>
           <tr><td><code>read_data</code></td><td>Series as an aligned table or full-precision CSV.</td></tr>
           <tr><td><code>write_series</code></td><td>Write values from the conversation into a series.</td></tr>
           <tr><td><code>import_data</code></td><td>Read <code>.xlsx</code>, <code>.csv</code>, <code>.dta</code>, <code>.sav</code> and more.</td></tr>
@@ -815,7 +903,7 @@ Obs*R-squared       3.05184      Prob. Chi-Square(2)    0.217421</pre>
 </section>
 
 <!-- ============ LIBRARY ============ -->
-<section id="library">
+<section id="library" class="hue-3">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>The Python library</h2>
@@ -880,7 +968,7 @@ in "BROKEN_COMMAND" in MCP_3BA1F7DC.PRG on line 2.</pre>
 </section>
 
 <!-- ============ TRAPS ============ -->
-<section id="traps">
+<section id="traps" class="hue-6">
   <div class="wrap">
     <div class="sec-head prose">
       <h2>Traps that silently corrupt results</h2>
@@ -928,7 +1016,7 @@ in "BROKEN_COMMAND" in MCP_3BA1F7DC.PRG on line 2.</pre>
       </table>
     </div>
 
-    <div class="note" style="margin-top:1.5rem">
+    <div class="note rose" style="margin-top:1.5rem">
       <b>The five-second habit that catches most of these:</b> read the four header lines on every
       EViews output — dependent variable, method, sample, included observations.
     </div>
@@ -936,7 +1024,7 @@ in "BROKEN_COMMAND" in MCP_3BA1F7DC.PRG on line 2.</pre>
 </section>
 
 <!-- ============ AUTHOR ============ -->
-<section id="author">
+<section id="author" class="hue-2">
   <div class="wrap">
     <div class="sec-head prose"><h2>Author</h2></div>
 
