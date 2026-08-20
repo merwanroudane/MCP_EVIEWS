@@ -124,12 +124,20 @@ Writing back, a `DatetimeIndex` or `PeriodIndex` decides the page frequency and
 span, so dates stay aligned:
 
 ```python
+import numpy as np
 import pandas as pd
 
+rng = np.random.default_rng(7)
 index = pd.period_range("2005Q1", periods=40, freq="Q")
-df = pd.DataFrame({"inflation": ..., "unemployment": ...}, index=index)
+unemployment = 7.0 - 0.05 * np.arange(40) + rng.normal(0, 0.4, 40)
 
-ev.from_dataframe(df)              # creates a quarterly 2005Q1–2014Q4 page
+df = pd.DataFrame(
+    {"unemployment": unemployment,
+     "inflation": 9.0 - 0.9 * unemployment + rng.normal(0, 0.5, 40)},
+    index=index,
+)
+
+ev.from_dataframe(df)              # creates a quarterly 2005Q1-2014Q4 page
 ev.run("equation phillips.ls inflation c unemployment")
 ```
 
@@ -152,13 +160,17 @@ EViews reports failures precisely, including the line number inside a program,
 and those messages are passed through unchanged:
 
 ```python
-ev.run("series ok = 1\nbroken_command\n")
+ev.run("""series ok = 1
+broken_command
+""")
 ```
 
 ```text
 EViewsError: BROKEN_COMMAND is not defined or is an illegal command in "BROKEN_COMMAND"
-in MCP_6EA97931084C.PRG on line 2.
+in MCP_77B699157F3B.PRG on line 2.
 ```
+
+The generated program is given a random name each run, so only that part varies.
 
 ## MCP server use
 
