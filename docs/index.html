@@ -300,10 +300,9 @@
   .gallery {
     display: grid; gap: 1.5rem;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    /* Each card sizes to its own figure. Without this, grid stretches
-       every card in a row to the tallest one -- and since the
-       correlogram is portrait while the others are landscape, the
-       shorter cards ended up with dead space under their captions. */
+    /* Each card sizes to its own figure. Without this, grid stretches every
+       card in a row to the tallest one, leaving the shorter figures with a
+       block of dead space under their captions. */
     align-items: start;
   }
   figure { margin: 0; border: 1px solid var(--f-line, var(--border)); border-radius: 6px; overflow: hidden; background: var(--ground); box-shadow: var(--shadow); }
@@ -314,7 +313,22 @@
   .gallery figure:nth-child(4) { --f-line: var(--s4-line); --f-soft: var(--s4-soft); --f-ink: var(--s4-ink); }
   .gallery figure:nth-child(5) { --f-line: var(--s5-line); --f-soft: var(--s5-soft); --f-ink: var(--s5-ink); }
   .gallery figure:nth-child(6) { --f-line: var(--s6-line); --f-soft: var(--s6-soft); --f-ink: var(--s6-ink); }
+  figure a.shot { display: block; position: relative; }
   figure img { display: block; width: 100%; height: auto; background: #fff; }
+  figure a.shot::after {
+    content: "Open full size";
+    position: absolute; right: .55rem; bottom: .55rem;
+    background: rgba(23,32,51,.82); color: #fff;
+    font-family: "IBM Plex Sans", sans-serif; font-size: .7rem;
+    padding: .2rem .5rem; border-radius: 3px;
+    opacity: 0; transition: opacity .15s ease;
+  }
+  figure a.shot:hover::after, figure a.shot:focus-visible::after { opacity: 1; }
+  /* The impulse grid holds nine panels in one image, so at a third of the
+     content width none of them can be read. */
+  @media (min-width: 900px) {
+    .gallery figure.wide { grid-column: span 2; }
+  }
   figcaption { padding: .75rem .95rem; border-top: 1px solid var(--f-line); background: var(--f-soft); font-size: .82rem; color: var(--muted); }
   figcaption b { display: block; color: var(--f-ink); font-weight: 700; font-size: .88rem; margin-bottom: .15rem; }
   figcaption code { font-size: .78rem; }
@@ -800,35 +814,61 @@ Obs*R-squared       3.05184      Prob. Chi-Square(2)    0.217421</pre>
       <h2>Plots</h2>
       <p>
         Graphs cannot be returned as text, so they are written to a file. Every image below
-        was exported from the session above with a single call.
+        was exported from the session above with a single call, at 200 dpi.
+        Click any of them to open the full-resolution file.
       </p>
     </div>
 
     <div class="gallery">
       <figure>
-        <img src="assets/series-lines.png" alt="Line chart of lngdp, lnk and lnl from 1996 to 2020, all trending upward.">
+        <a class="shot" href="assets/series-lines.png" target="_blank" rel="noopener"><img src="assets/series-lines.png" alt="Line chart of lngdp, lnk and lnl from 1996 to 2020, all trending upward."></a>
         <figcaption><b>The three series</b><code>export_object("g_series", "series-lines.png")</code></figcaption>
       </figure>
       <figure>
-        <img src="assets/scatter.png" alt="Scatter plot of lngdp against lnk showing a tight positive linear relationship.">
+        <a class="shot" href="assets/scatter.png" target="_blank" rel="noopener"><img src="assets/scatter.png" alt="Scatter plot of lngdp against lnk showing a tight positive linear relationship."></a>
         <figcaption><b>Scatter, output against capital</b><code>graph g_scat.scat lnk lngdp</code></figcaption>
       </figure>
       <figure>
-        <img src="assets/residuals.png" alt="Actual, fitted and residual plot for the regression, residuals centred on zero.">
+        <a class="shot" href="assets/residuals.png" target="_blank" rel="noopener"><img src="assets/residuals.png" alt="Actual, fitted and residual plot for the regression, residuals centred on zero."></a>
         <figcaption><b>Actual, fitted, residual</b><code>export_object("eq1", …, view="resids")</code></figcaption>
       </figure>
       <figure>
-        <img src="assets/cusum.png" alt="CUSUM stability test plot with the statistic remaining inside the 5 percent bounds.">
+        <a class="shot" href="assets/cusum.png" target="_blank" rel="noopener"><img src="assets/cusum.png" alt="CUSUM stability test plot with the statistic remaining inside the 5 percent bounds."></a>
         <figcaption><b>CUSUM stability test</b><code>view="rls(q)"</code></figcaption>
       </figure>
-      <figure>
-        <img src="assets/correlogram.png" alt="Correlogram of lngdp showing slowly decaying autocorrelations.">
-        <figcaption><b>Correlogram</b><code>view="correl"</code></figcaption>
-      </figure>
-      <figure>
-        <img src="assets/impulse.png" alt="Grid of impulse response functions from the three-variable VAR.">
+      <figure class="wide">
+        <a class="shot" href="assets/impulse.png" target="_blank" rel="noopener"><img src="assets/impulse.png" alt="Grid of impulse response functions from the three-variable VAR."></a>
         <figcaption><b>VAR impulse responses</b><code>view="impulse(10,m)"</code></figcaption>
       </figure>
+    </div>
+
+    <h3 style="margin-top:2.5rem">Not everything is a picture</h3>
+    <p class="prose" style="color:var(--muted);margin-top:.6rem">
+      A correlogram is a table, so it comes back as text rather than as a graph.
+      The plotted autocorrelation bars are drawn by EViews and do not survive the
+      trip across, but every number does.
+    </p>
+    <div class="out" style="margin-top:1rem">
+      <div class="out-bar">
+        <span class="tag">show("lngdp", "correl")</span>
+        <span class="src">first 12 lags of 36</span>
+      </div>
+<pre>Sample: 1996Q1 2020Q4
+Included observations: 100
+
+Lag   AC           PAC          Q-Stat     Prob
+1     0.957591     0.957591     94.4767    2.48e-22
+2     0.925714     0.105209     183.669    1.31e-40
+3     0.897812     0.047168     268.431    6.74e-58
+4     0.868596     -0.016849    348.592    3.53e-74
+5     0.840447     -0.00186816  424.432    1.6e-89
+6     0.806486     -0.0839782   495.009    9.99e-104
+7     0.778659     0.0404537    561.508    4.71e-117
+8     0.750175     -0.015085    623.901    1.7e-129
+9     0.723545     0.0144668    682.581    3.84e-141
+10    0.694374     -0.0433673   737.225    6.37e-152
+11    0.664384     -0.0258689   787.814    7.83e-162
+12    0.633812     -0.040077    834.376    7e-171</pre>
     </div>
 
     <div class="note" style="margin-top:1.75rem">
