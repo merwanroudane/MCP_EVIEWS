@@ -156,8 +156,8 @@ ev.run("series ok = 1\nbroken_command\n")
 ```
 
 ```text
-EViewsError: BROKEN_COMMAND is not defined or is an illegal command
-in "BROKEN_COMMAND" in MCP_3BA1F7DC.PRG on line 2.
+EViewsError: BROKEN_COMMAND is not defined or is an illegal command in "BROKEN_COMMAND"
+in MCP_6EA97931084C.PRG on line 2.
 ```
 
 ## MCP server use

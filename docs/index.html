@@ -16,12 +16,12 @@
      its own colour. Light throughout: the plots below are real EViews exports
      on a white ground, and a dark surface would fight the artwork it frames. */
   :root {
-    --s1: #6d4aff;  --s1-soft: #f0edff;  --s1-line: #cfc4ff;  --s1-ink: #4526cc;
-    --s2: #1e7fd4;  --s2-soft: #e4f0fb;  --s2-line: #b3d6f2;  --s2-ink: #14538c;
-    --s3: #0e9c93;  --s3-soft: #ddf4f1;  --s3-line: #a5e0da;  --s3-ink: #086b65;
-    --s4: #2e9e4f;  --s4-soft: #e6f6ea;  --s4-line: #b2e0be;  --s4-ink: #1d6a35;
-    --s5: #e08a00;  --s5-soft: #fdf2de;  --s5-line: #f2d3a0;  --s5-ink: #96590a;
-    --s6: #e8455f;  --s6-soft: #fdeaee;  --s6-line: #f7c0ca;  --s6-ink: #a52338;
+    --s1: #6d4aff;  --s1-soft: #ece7ff;  --s1-line: #cfc4ff;  --s1-ink: #4526cc;  --s1-tint: #f6f3ff;
+    --s2: #1e7fd4;  --s2-soft: #ddecfa;  --s2-line: #b3d6f2;  --s2-ink: #14538c;  --s2-tint: #eff7fe;
+    --s3: #0e9c93;  --s3-soft: #d5f1ee;  --s3-line: #a5e0da;  --s3-ink: #086b65;  --s3-tint: #ecfaf8;
+    --s4: #2e9e4f;  --s4-soft: #ddf2e3;  --s4-line: #b2e0be;  --s4-ink: #1d6a35;  --s4-tint: #f0fbf3;
+    --s5: #e08a00;  --s5-soft: #fcedd2;  --s5-line: #f2d3a0;  --s5-ink: #96590a;  --s5-tint: #fef8ec;
+    --s6: #e8455f;  --s6-soft: #fce2e7;  --s6-line: #f7c0ca;  --s6-ink: #a52338;  --s6-tint: #fef4f6;
 
     --ground:      #ffffff;
     --panel:       #f6f8fc;
@@ -33,17 +33,17 @@
 
     /* the active hue, re-pointed per section */
     --hue: var(--s2); --hue-soft: var(--s2-soft);
-    --hue-line: var(--s2-line); --hue-ink: var(--s2-ink);
+    --hue-line: var(--s2-line); --hue-ink: var(--s2-ink); --hue-tint: var(--s2-tint);
 
     --shadow: 0 1px 2px rgba(23,32,51,.05), 0 6px 20px rgba(23,32,51,.06);
     --measure: 74ch;
   }
-  .hue-1 { --hue: var(--s1); --hue-soft: var(--s1-soft); --hue-line: var(--s1-line); --hue-ink: var(--s1-ink); }
-  .hue-2 { --hue: var(--s2); --hue-soft: var(--s2-soft); --hue-line: var(--s2-line); --hue-ink: var(--s2-ink); }
-  .hue-3 { --hue: var(--s3); --hue-soft: var(--s3-soft); --hue-line: var(--s3-line); --hue-ink: var(--s3-ink); }
-  .hue-4 { --hue: var(--s4); --hue-soft: var(--s4-soft); --hue-line: var(--s4-line); --hue-ink: var(--s4-ink); }
-  .hue-5 { --hue: var(--s5); --hue-soft: var(--s5-soft); --hue-line: var(--s5-line); --hue-ink: var(--s5-ink); }
-  .hue-6 { --hue: var(--s6); --hue-soft: var(--s6-soft); --hue-line: var(--s6-line); --hue-ink: var(--s6-ink); }
+  .hue-1 { --hue: var(--s1); --hue-soft: var(--s1-soft); --hue-line: var(--s1-line); --hue-ink: var(--s1-ink); --hue-tint: var(--s1-tint); }
+  .hue-2 { --hue: var(--s2); --hue-soft: var(--s2-soft); --hue-line: var(--s2-line); --hue-ink: var(--s2-ink); --hue-tint: var(--s2-tint); }
+  .hue-3 { --hue: var(--s3); --hue-soft: var(--s3-soft); --hue-line: var(--s3-line); --hue-ink: var(--s3-ink); --hue-tint: var(--s3-tint); }
+  .hue-4 { --hue: var(--s4); --hue-soft: var(--s4-soft); --hue-line: var(--s4-line); --hue-ink: var(--s4-ink); --hue-tint: var(--s4-tint); }
+  .hue-5 { --hue: var(--s5); --hue-soft: var(--s5-soft); --hue-line: var(--s5-line); --hue-ink: var(--s5-ink); --hue-tint: var(--s5-tint); }
+  .hue-6 { --hue: var(--s6); --hue-soft: var(--s6-soft); --hue-line: var(--s6-line); --hue-ink: var(--s6-ink); --hue-tint: var(--s6-tint); }
 
   /* the palette itself, declared once at the top of the page */
   .spectrum { display: flex; height: 5px; }
@@ -59,7 +59,10 @@
 
   body {
     margin: 0;
-    background: var(--ground);
+    background:
+      radial-gradient(70rem 40rem at 100% 0%, var(--s3-tint) 0%, transparent 55%),
+      radial-gradient(60rem 38rem at 0% 30%, var(--s1-tint) 0%, transparent 55%),
+      var(--s2-tint);
     color: var(--ink);
     font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     font-size: 16.5px;
@@ -98,9 +101,9 @@
   /* ---------- nav ---------- */
   .nav {
     position: sticky; top: 0; z-index: 50;
-    background: rgba(255,255,255,.93);
-    backdrop-filter: saturate(140%) blur(8px);
-    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.82);
+    backdrop-filter: saturate(150%) blur(10px);
+    border-bottom: 1px solid var(--s1-line);
   }
   .nav-in { display: flex; align-items: center; gap: 1.5rem; height: 56px; }
   .nav-brand {
@@ -126,9 +129,10 @@
   .head {
     padding: 4rem 0 3rem; border-bottom: 1px solid var(--border);
     background:
-      radial-gradient(58rem 22rem at 6% -12%, var(--s1-soft) 0%, transparent 62%),
-      radial-gradient(52rem 20rem at 52% -16%, var(--s2-soft) 0%, transparent 60%),
-      radial-gradient(46rem 20rem at 97% -8%, var(--s3-soft) 0%, transparent 58%),
+      radial-gradient(58rem 24rem at 6% -12%, var(--s1-soft) 0%, transparent 64%),
+      radial-gradient(52rem 22rem at 50% -18%, var(--s2-soft) 0%, transparent 62%),
+      radial-gradient(48rem 22rem at 97% -8%, var(--s3-soft) 0%, transparent 60%),
+      radial-gradient(40rem 20rem at 78% 108%, var(--s5-tint) 0%, transparent 62%),
       var(--ground);
   }
   .eyebrow {
@@ -194,7 +198,10 @@
   .btn.primary:hover { filter: saturate(115%) brightness(1.07); color: #fff; border-color: transparent; }
 
   /* ---------- sections ---------- */
-  section { padding: 3.5rem 0; border-bottom: 1px solid var(--border); }
+  section {
+    padding: 3.5rem 0; border-bottom: 1px solid var(--hue-line);
+    background: var(--hue-tint);
+  }
   section:last-of-type { border-bottom: 0; }
   .sec-head { margin-bottom: 1.75rem; }
   .sec-head h2 { display: flex; align-items: baseline; gap: .7rem; }
@@ -212,7 +219,7 @@
   /* ---------- code + output ---------- */
   pre {
     margin: 0; padding: 1rem 1.15rem; overflow-x: auto;
-    background: var(--panel); border: 1px solid var(--border);
+    background: var(--ground); border: 1px solid var(--hue-line);
     border-radius: 6px; font-size: .84rem; line-height: 1.6;
     color: #1b2836;
   }
@@ -234,6 +241,8 @@
   }
   .out-bar .src { font-size: .72rem; color: var(--faint); }
   .out pre { border: 0; border-radius: 0; background: var(--ground); font-variant-numeric: tabular-nums; }
+  .tbl-scroll { background: var(--ground); }
+  table { background: var(--ground); }
 
   /* ---------- steps ---------- */
   ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }
@@ -264,7 +273,7 @@
   ol.steps .body > * + * { margin-top: .8rem; }
 
   /* ---------- tables ---------- */
-  .tbl-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
+  .tbl-scroll { overflow-x: auto; border: 1px solid var(--hue-line); border-radius: 6px; box-shadow: var(--shadow); }
   table { border-collapse: collapse; width: 100%; font-size: .9rem; }
   thead th {
     text-align: left; background: var(--hue-soft); color: var(--hue-ink);
@@ -273,7 +282,7 @@
   }
   tbody td { padding: .65rem .9rem; border-bottom: 1px solid var(--border); vertical-align: top; }
   tbody tr:last-child td { border-bottom: 0; }
-  tbody tr:nth-child(even) { background: #fafcfd; }
+  tbody tr:nth-child(even) { background: var(--hue-tint); }
   td code { white-space: nowrap; }
   .grp td {
     font-weight: 700; font-size: .78rem;
@@ -290,6 +299,7 @@
   /* ---------- plot gallery ---------- */
   .gallery { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
   figure { margin: 0; border: 1px solid var(--f-line, var(--border)); border-radius: 6px; overflow: hidden; background: var(--ground); box-shadow: var(--shadow); }
+  .install { box-shadow: var(--shadow); }
   .gallery figure:nth-child(1) { --f-line: var(--s1-line); --f-soft: var(--s1-soft); --f-ink: var(--s1-ink); }
   .gallery figure:nth-child(2) { --f-line: var(--s2-line); --f-soft: var(--s2-soft); --f-ink: var(--s2-ink); }
   .gallery figure:nth-child(3) { --f-line: var(--s3-line); --f-soft: var(--s3-soft); --f-ink: var(--s3-ink); }
@@ -353,8 +363,9 @@
   .author .links { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
 
   footer {
-    padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--border);
-    color: var(--faint); font-size: .85rem;
+    padding: 2.5rem 0 3.5rem; border-top: 1px solid var(--s1-line);
+    background: linear-gradient(180deg, var(--s1-tint), var(--s3-tint));
+    color: var(--muted); font-size: .85rem;
   }
   footer a { color: var(--muted); }
   .foot-in { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; }
@@ -533,7 +544,8 @@ pip install "eviews-mcp[pandas]"</pre>
         <div class="body">
           <pre class="term">python -c "from eviews_mcp import EViews; print(EViews().status())"</pre>
           <div class="out">
-            <div class="out-bar"><span class="tag">output</span><span class="src">verified on EViews 13.0</span></div>
+            <div class="out-bar"><span class="tag">output</span>
+      <span class="src">verified on EViews 13.0</span></div>
 <pre>{'connected': True, 'progid': 'EViews.Manager', 'version': '13.0',
  'workfile': None, 'scratch_dir': 'C:\\ev_mcp'}</pre>
           </div>
@@ -592,7 +604,8 @@ pip install "eviews-mcp[pandas]"</pre>
     <div class="prose stack" style="margin-top:1.75rem">
       <p>Confirm it worked by asking the assistant to <em>“check the EViews connection”</em>:</p>
       <div class="out">
-        <div class="out-bar"><span class="tag">eviews_status</span><span class="src">real session output</span></div>
+        <div class="out-bar"><span class="tag">eviews_status</span>
+      <span class="src">real session output</span></div>
 <pre>Connected to EViews 13.0 via EViews.Manager
 Scratch directory: C:\ev_mcp
 Active workfile: none open (use create_workfile or open_workfile)</pre>
@@ -622,7 +635,8 @@ Active workfile: none open (use create_workfile or open_workfile)</pre>
             <em>“Import C:\ev_mcp\guide\macro.csv, then describe the workfile.”</em>
           </p>
           <div class="out">
-            <div class="out-bar"><span class="tag">import_data → workfile_info</span><span class="src">real session output</span></div>
+            <div class="out-bar"><span class="tag">import_data → workfile_info</span>
+      <span class="src">real session output</span></div>
 <pre>Imported C:\ev_mcp\guide\macro.csv.
 Series now present: DATE, LNGDP, LNK, LNL
 
@@ -648,7 +662,8 @@ Objects:        4</pre>
         <div class="body">
           <p style="font-size:.95rem;color:var(--muted)"><em>“Run an ADF test on lngdp in levels, then on the first difference.”</em></p>
           <div class="out">
-            <div class="out-bar"><span class="tag">show("lngdp", "uroot")</span><span class="src">levels</span></div>
+            <div class="out-bar"><span class="tag">show("lngdp", "uroot")</span>
+      <span class="src">levels</span></div>
 <pre>Null Hypothesis: LNGDP has a unit root
 Exogenous: Constant
 Lag Length: 2 (Automatic - based on SIC, maxlag=12)
@@ -663,7 +678,8 @@ Test critical values:   1% level            -3.49917
 *MacKinnon (1996) one-sided p-values.</pre>
           </div>
           <div class="out" style="margin-top:1rem">
-            <div class="out-bar"><span class="tag">show("lngdp", "uroot(dif=1)")</span><span class="src">first difference</span></div>
+            <div class="out-bar"><span class="tag">show("lngdp", "uroot(dif=1)")</span>
+      <span class="src">first difference</span></div>
 <pre>Null Hypothesis: D(LNGDP) has a unit root
 Exogenous: Constant
 Lag Length: 1 (Automatic - based on SIC, maxlag=11)
@@ -687,7 +703,8 @@ Test critical values:   1% level            -3.49917
         <div class="body">
           <pre>equation ardl1.ardl(deplags=4, reglags=4) lngdp lnk lnl</pre>
           <div class="out" style="margin-top:1rem">
-            <div class="out-bar"><span class="tag">show("ardl1")</span><span class="src">real session output</span></div>
+            <div class="out-bar"><span class="tag">show("ardl1")</span>
+      <span class="src">real session output</span></div>
 <pre>Dependent Variable: LNGDP
 Method: ARDL
 Sample: 1996Q2 2020Q4
@@ -722,7 +739,8 @@ Prob(F-statistic)   2.60070e-87</pre>
         <div class="body">
           <p style="font-size:.95rem;color:var(--muted)"><em>“Show me the cointegrating relationship.”</em></p>
           <div class="out">
-            <div class="out-bar"><span class="tag">show("ardl1", "cointrel")</span><span class="src">real session output</span></div>
+            <div class="out-bar"><span class="tag">show("ardl1", "cointrel")</span>
+      <span class="src">real session output</span></div>
 <pre>Deterministics: Rest. constant (Case 2)
 ------------------------------------------------------------
 CE = LNGDP(-1) - (0.543006*LNK + 0.370972*LNL + 1.153436)
@@ -748,7 +766,8 @@ Note: * Coefficients derived from the CEC regression.</pre>
         <h3>Diagnose, then save</h3>
         <div class="body">
           <div class="out">
-            <div class="out-bar"><span class="tag">show("ardl1", "auto(2)")</span><span class="src">Breusch-Godfrey</span></div>
+            <div class="out-bar"><span class="tag">show("ardl1", "auto(2)")</span>
+      <span class="src">Breusch-Godfrey</span></div>
 <pre>Breusch-Godfrey Serial Correlation LM Test:
 Null hypothesis: No serial correlation at up to 2 lags
 
@@ -960,9 +979,10 @@ ev.from_dataframe(df)</pre>
 
     <h3 style="margin-top:2.5rem">Errors name the line</h3>
     <div class="out" style="margin-top:1rem">
-      <div class="out-bar"><span class="tag">EViewsError</span><span class="src">passed through unchanged</span></div>
-<pre>BROKEN_COMMAND is not defined or is an illegal command
-in "BROKEN_COMMAND" in MCP_3BA1F7DC.PRG on line 2.</pre>
+      <div class="out-bar"><span class="tag">EViewsError</span>
+      <span class="src">passed through unchanged</span></div>
+<pre>BROKEN_COMMAND is not defined or is an illegal command in "BROKEN_COMMAND"
+in MCP_6EA97931084C.PRG on line 2.</pre>
     </div>
   </div>
 </section>
@@ -1049,7 +1069,8 @@ in "BROKEN_COMMAND" in MCP_3BA1F7DC.PRG on line 2.</pre>
 
     <h3 style="margin-top:2.5rem">Citing this software</h3>
     <div class="out" style="margin-top:1rem">
-      <div class="out-bar"><span class="tag">suggested wording</span><span class="src">methods or software note</span></div>
+      <div class="out-bar"><span class="tag">suggested wording</span>
+      <span class="src">methods or software note</span></div>
 <pre>Estimation was carried out in EViews 13, driven through the
 eviews-mcp interface (Roudane, 2026).</pre>
     </div>
