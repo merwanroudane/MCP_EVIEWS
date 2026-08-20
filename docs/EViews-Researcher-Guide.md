@@ -792,8 +792,14 @@ Not for the conversational workflow. You need it only for the scripted, reproduc
 
 ---
 
-## Getting help
+## Where everything lives
 
-Issues and questions: [github.com/merwanroudane/MCP_EVIEWS/issues](https://github.com/merwanroudane/MCP_EVIEWS/issues)
+| | |
+|---|---|
+| Documentation site | [merwanroudane.github.io/MCP_EVIEWS](https://merwanroudane.github.io/MCP_EVIEWS/) |
+| Package | [pypi.org/project/eviews-mcp](https://pypi.org/project/eviews-mcp/) |
+| Source code | [github.com/merwanroudane/MCP_EVIEWS](https://github.com/merwanroudane/MCP_EVIEWS) |
+| Issues and questions | [Report a bug or ask](https://github.com/merwanroudane/MCP_EVIEWS/issues) |
+| Release history | [CHANGELOG](https://github.com/merwanroudane/MCP_EVIEWS/blob/main/CHANGELOG.md) |
 
 Maintained by **Dr Merwan Roudane**. Licensed MIT.

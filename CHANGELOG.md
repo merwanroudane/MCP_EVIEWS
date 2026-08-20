@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.2
+
+### Added
+- The project page on PyPI now links to the documentation site, the researcher
+  guide and the changelog. It previously carried only GitHub URLs, so a visitor
+  arriving from a package search had no route to the guide.
+- The guide closes with a table of every place the project lives, having
+  previously linked only to the issue tracker.
+
+Metadata only; no code changed. Project URLs are read from the uploaded
+distribution, so these appear on PyPI with this release rather than
+retroactively.
+
 ## 1.3.1
 
 A packaging and documentation release. Nothing under `src/` changed since
