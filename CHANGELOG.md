@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.3.1
+
+A packaging and documentation release. Nothing under `src/` changed since
+1.3.0, so the installed library is byte-for-byte the same; what is new is the
+project page and the release machinery around it.
+
+### Added
+- `.github/workflows/publish.yml`, publishing through PyPI Trusted Publishing
+  rather than a stored API token, and refusing to run when the release tag does
+  not match the version in `pyproject.toml`.
+- `.github/workflows/tests.yml`, running the offline suite on Windows and Ubuntu
+  across Python 3.10 and 3.12, plus a build-and-metadata check.
+- Section 6.7 of the researcher guide covers `unit_root`, `equation_coefficients`
+  and `diagnose_equation`, which the guide predated.
+
+### Fixed
+- The offline suite required pywin32 on Windows, because three tests keyed their
+  skip on `sys.platform` rather than on whether the import actually worked --
+  being on Windows says nothing about whether pywin32 is installed. It now needs
+  no dependencies anywhere, as it always claimed to.
+- The version badge on the documentation site was maintained by hand and had
+  drifted a release behind. It reads PyPI directly now.
+- The guide still installed from git rather than PyPI.
+
 ## 1.3.0
 
 Results can now be read as data, not only as formatted text.
