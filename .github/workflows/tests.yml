@@ -38,6 +38,8 @@ jobs:
 
       - name: Import the package without pywin32 present
         if: matrix.os == 'ubuntu-latest'
+        env:
+          PYTHONPATH: src
         run: |
           python - <<'PY'
           import eviews_mcp

@@ -132,16 +132,25 @@ def test_to_csv_blank_for_missing():
 
 
 def _client_helpers():
-    """Imported lazily: pulls in pywin32, which only exists on Windows."""
-    from eviews_mcp.client import _clean_name, _is_missing, eviews_date
+    """The client module, or None when it cannot be imported here.
 
+    It pulls in pywin32, which exists only on Windows and is not installed in
+    every environment that runs this suite -- continuous integration installs
+    nothing at all. These tests are skipped rather than failed in that case,
+    because the suite is meant to need no dependencies.
+    """
+    try:
+        from eviews_mcp.client import _clean_name, _is_missing, eviews_date
+    except ImportError:
+        return None
     return _clean_name, _is_missing, eviews_date
 
 
 def test_clean_name_makes_legal_eviews_names():
-    if sys.platform != "win32":
+    helpers = _client_helpers()
+    if helpers is None:
         return
-    clean, _, _ = _client_helpers()
+    clean, _, _ = helpers
     assert clean("GDP growth (%)") == "GDP_growth____"
     assert clean("2020") == "s_2020"
     assert clean("") == "series"
@@ -149,20 +158,22 @@ def test_clean_name_makes_legal_eviews_names():
 
 
 def test_is_missing_detects_nan_and_none():
-    if sys.platform != "win32":
+    helpers = _client_helpers()
+    if helpers is None:
         return
-    _, missing, _ = _client_helpers()
+    _, missing, _ = helpers
     assert missing(None)
     assert missing(float("nan"))
     assert not missing(0.0)
 
 
 def test_eviews_date_formats_by_frequency():
-    if sys.platform != "win32":
+    helpers = _client_helpers()
+    if helpers is None:
         return
     import datetime
 
-    _, _, as_date = _client_helpers()
+    _, _, as_date = helpers
     stamp = datetime.datetime(1990, 4, 1)
     assert as_date(stamp, "a") == "1990"
     assert as_date(stamp, "q") == "1990Q2"
