@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.3.0
+
+Results can now be read as data, not only as formatted text.
+
+### Added
+- `eviews_mcp.results`, which parses frozen EViews tables back into Python
+  values. The layouts it handles were read off real EViews 13 output.
+- `coefficients()` returns one dictionary per regressor, carrying the estimate,
+  standard error, t-statistic and p-value at full precision. `fit()` returns the
+  summary block beneath an estimation.
+- `unit_root()` tests the levels and then successive differences, stopping at
+  the first rejection, and reports the order of integration. Any EViews unit
+  root view can be selected, so Phillips-Perron and KPSS work too.
+- `diagnose()` runs Breusch-Godfrey, White and Jarque-Bera against an equation
+  and reports each statistic, p-value and whether its null is rejected. A test
+  that cannot run -- White has nothing to work with on a constant-only
+  equation -- is reported with the reason EViews gave, rather than dropped
+  silently and leaving the summary overstating how much was checked.
+- Three matching MCP tools: `equation_coefficients`, `unit_root` and
+  `diagnose_equation`.
+
+The verdicts these produce are mechanical readings of p-values against a stated
+level. They do not establish that a specification is sound.
+
 ## 1.2.0
 
 ### Added

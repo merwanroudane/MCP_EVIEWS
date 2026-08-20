@@ -113,6 +113,50 @@ r2   = ev.value("eq1.@r2")         # 0.9947015...
 beta = ev.value("eq1.@coefs(2)")
 ```
 
+### Results as data, not just text
+
+`show` formats a table for reading. These return the numbers instead, for
+testing, tabulating, or passing to something else:
+
+```python
+ev.coefficients("eq1")
+# [{'variable': 'LNK', 'coefficient': 0.549198724914677,
+#   'std_error': 0.023936158605687322, 't_stat': 22.94431341143375,
+#   'p_value': 5.677925593821611e-41}, ...]
+
+ev.fit("eq1")["R-squared"]        # 0.9858630667863459
+```
+
+Order of integration, tested down through differences until stationary:
+
+```python
+ev.unit_root("lngdp")
+# {'series': 'LNGDP', 'order_of_integration': 1, 'conclusion': 'I(1)',
+#  'steps': [{'difference': 0, 'statistic': -0.5001, 'p_value': 0.8856, ...},
+#            {'difference': 1, 'statistic': -12.1778, 'p_value': 0.0001, ...}]}
+```
+
+Pass `options` to choose the test: `"pp"` for Phillips-Perron, `"kpss"` for
+KPSS, `"adf, trend"` to add a trend. KPSS reverses the null, so the reported
+order does not apply to it.
+
+The standard post-estimation battery in one call:
+
+```python
+report = ev.diagnose("eq1")
+report["summary"]
+# 'All 3 diagnostics pass at the 0.05 level.'
+```
+
+Breusch-Godfrey, White and Jarque-Bera, each with its statistic, p-value and
+whether the null is rejected. A test that cannot run is listed under
+`report["skipped"]` with the reason EViews gave, so the summary never overstates
+how much was actually checked.
+
+These verdicts read p-values against a level you choose. They do not establish
+that a specification is sound -- structural breaks, seasonality and short
+samples all mislead these tests.
+
 ### pandas both ways
 
 ```python
@@ -211,6 +255,9 @@ claude mcp add eviews -- eviews-mcp
 | `show` | **Render any object as a text table.** |
 | `evaluate` | One value from an expression. |
 | `describe_object` | Type, plus statistics for a series. |
+| `equation_coefficients` | Coefficients as a clean table of numbers. |
+| `unit_root` | Order of integration, tested down through differences. |
+| `diagnose_equation` | Serial correlation, heteroskedasticity and normality. |
 | `read_data` | Series as an aligned table or full-precision CSV. |
 | `write_series` | Write values into a series. |
 | `import_data` | Read `.xlsx`, `.csv`, `.dta`, `.sav`, and more. |
@@ -254,9 +301,9 @@ because they surprise people writing COM code directly.
 ## Tests
 
 ```bash
-python tests/test_offline.py        # 20 tests, no EViews needed
+python tests/test_offline.py        # 27 tests, no EViews needed
 python tests/test_live.py           # 25 tests, drives the MCP tool layer
-python tests/test_live_client.py    # 39 tests, drives the library API
+python tests/test_live_client.py    # 58 tests, drives the library API
 ```
 
 `pytest` runs the offline suite by default; the live suites are opt-in because

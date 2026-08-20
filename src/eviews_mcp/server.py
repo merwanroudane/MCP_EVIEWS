@@ -343,6 +343,103 @@ def describe_object(name: str) -> str:
 
 
 # --------------------------------------------------------------------------
+# Analysis
+# --------------------------------------------------------------------------
+
+
+@mcp.tool()
+@guard
+def equation_coefficients(equation: str, digits: int = 6) -> str:
+    """Return an equation's coefficients as a clean table.
+
+    Use this when you want the numbers to reason about -- comparing a
+    coefficient against a hypothesised value, checking which regressors are
+    significant -- rather than the full estimation output that show() gives.
+    """
+    rows = _client().coefficients(equation)
+    head = "%-24s %14s %14s %12s %12s" % (
+        "Variable", "Coefficient", "Std. Error", "t-Statistic", "Prob.")
+    lines = [head, "-" * len(head)]
+    for r in rows:
+        lines.append("%-24s %14.*g %14.*g %12.4f %12.4g" % (
+            r["variable"], digits, r["coefficient"], digits, r["std_error"],
+            r["t_stat"], r["p_value"]))
+    return "\n".join(lines)
+
+
+@mcp.tool()
+@guard
+def unit_root(series: str, options: str = "", max_diff: int = 2,
+              alpha: float = 0.05) -> str:
+    """Test a series for a unit root and report its order of integration.
+
+    Runs the test on the levels, then on successive differences, stopping at the
+    first difference where the unit root null is rejected.
+
+    options: passed to the EViews view, so "pp" gives Phillips-Perron, "kpss"
+        gives KPSS, and "adf, trend" adds a trend. KPSS reverses the null, so
+        the order reported here does not apply to it.
+    alpha: significance level for the verdict.
+
+    The order is a mechanical reading of the p-values. Structural breaks,
+    seasonality and short samples all mislead these tests, so look at the series
+    as well.
+    """
+    result = _client().unit_root(series, options, max_diff, alpha)
+    lines = ["Unit root test on %s (alpha = %g)" % (result["series"], alpha), ""]
+    for step in result["steps"]:
+        label = "levels" if step["difference"] == 0 else (
+            "%d difference%s" % (step["difference"],
+                                 "" if step["difference"] == 1 else "s"))
+        lines.append("%-14s statistic %10.4f   p-value %-10.4g %s" % (
+            label, step["statistic"], step["p_value"],
+            "stationary" if step["stationary"] else "unit root not rejected"))
+        if step.get("lag_length"):
+            lines.append("%-14s lag length %s" % ("", step["lag_length"]))
+    lines.append("")
+    lines.append("Conclusion: %s" % result["conclusion"])
+    return "\n".join(lines)
+
+
+@mcp.tool()
+@guard
+def diagnose_equation(equation: str, lags: int = 2, alpha: float = 0.05) -> str:
+    """Run the standard post-estimation diagnostics and report each outcome.
+
+    Covers residual serial correlation (Breusch-Godfrey), heteroskedasticity
+    (White) and normality (Jarque-Bera), with the fit statistics alongside.
+
+    Every number comes from EViews; the wording attached to each result only
+    reads the p-value against alpha. Passing the battery does not make a
+    specification correct, and a test that could not run is reported as such
+    rather than quietly dropped.
+    """
+    report = _client().diagnose(equation, lags, alpha)
+    lines = ["Diagnostics for %s (alpha = %g)" % (report["equation"], alpha), ""]
+
+    fit = report.get("fit") or {}
+    for key in ("R-squared", "Adjusted R-squared", "S.E. of regression",
+                "Durbin-Watson stat"):
+        if key in fit:
+            lines.append("  %-22s %.6g" % (key + ":", fit[key]))
+    if fit:
+        lines.append("")
+
+    for test in report["tests"]:
+        lines.append("  %s" % test["test"])
+        lines.append("    null: %s" % test["null"])
+        lines.append("    statistic %.6g, p-value %.4g -> %s" % (
+            test["statistic"], test["p_value"], test["reading"]))
+    for skipped in report.get("skipped", []):
+        lines.append("  %s" % skipped["test"])
+        lines.append("    could not be run: %s" % skipped["reason"])
+
+    lines.append("")
+    lines.append(report["summary"])
+    return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
 # Data
 # --------------------------------------------------------------------------
 

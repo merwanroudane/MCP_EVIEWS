@@ -169,6 +169,79 @@ def test_eviews_date_formats_by_frequency():
     assert as_date(stamp, "m") == "1990M04"
 
 
+# --- results parsing (no EViews needed) -------------------------------------
+
+from eviews_mcp.results import (  # noqa: E402
+    coefficient_block,
+    find_row,
+    stat_pairs,
+    unit_root_block,
+)
+
+# Shapes copied from real EViews 13 output.
+EQUATION_ROWS = [
+    ("Dependent Variable: LNGDP", None, None, None, None),
+    ("Method: Least Squares", None, None, None, None),
+    ("Included observations: 100", None, None, None, None),
+    (None, None, None, None, None),
+    ("Variable", "Coefficient", "Std. Error", "t-Statistic", "Prob.  "),
+    (None, None, None, None, None),
+    ("C", 1.1837307775076809, 0.21647106628253193, 5.468309450477363, 3.5336e-07),
+    ("LNK", 0.549198724914677, 0.023936158605687322, 22.94431341143375, 5.6779e-41),
+    (None, None, None, None, None),
+    ("R-squared", 0.9858630667863459, "    Mean dependent var", None, 6.490510401193476),
+]
+
+UROOT_ROWS = [
+    ("Null Hypothesis: LNGDP has a unit root", None, None, None, None),
+    ("Lag Length: 2 (Automatic - based on SIC, maxlag=12)", None, None, None, None),
+    (None, None, None, "t-Statistic", "  Prob.*"),
+    ("Augmented Dickey-Fuller test statistic", None, None, -0.5000885853, 0.885574644),
+    ("Test critical values:", "1% level", None, -3.499166627, None),
+    (None, "5% level", None, -2.891549542, None),
+]
+
+
+def test_coefficient_block_reads_every_regressor():
+    rows = coefficient_block(EQUATION_ROWS)
+    assert [r["variable"] for r in rows] == ["C", "LNK"]
+    assert abs(rows[1]["coefficient"] - 0.549198724914677) < 1e-12
+    assert abs(rows[1]["t_stat"] - 22.94431341143375) < 1e-9
+
+
+def test_coefficient_block_stops_before_summary_statistics():
+    # R-squared sits below a blank row and must not be read as a regressor.
+    assert all(r["variable"] != "R-squared" for r in coefficient_block(EQUATION_ROWS))
+
+
+def test_coefficient_block_empty_when_absent():
+    assert coefficient_block([("Nothing here", None)]) == []
+
+
+def test_stat_pairs_reads_both_pairs_on_a_row():
+    pairs = stat_pairs(EQUATION_ROWS)
+    assert abs(pairs["R-squared"] - 0.9858630667863459) < 1e-12
+    assert abs(pairs["Mean dependent var"] - 6.490510401193476) < 1e-12
+
+
+def test_stat_pairs_handles_two_column_tables():
+    pairs = stat_pairs([(" Jarque-Bera", 2.048202298873794), (" Probability", 0.359119)])
+    assert abs(pairs["Jarque-Bera"] - 2.048202298873794) < 1e-12
+
+
+def test_unit_root_block_extracts_statistic_and_p_value():
+    block = unit_root_block(UROOT_ROWS)
+    assert abs(block["statistic"] + 0.5000885853) < 1e-9
+    assert abs(block["p_value"] - 0.885574644) < 1e-9
+    assert "unit root" in block["null"].lower()
+    assert "1% level" in block["critical_values"]
+
+
+def test_find_row_locates_by_multiple_needles():
+    assert find_row(EQUATION_ROWS, "variable", "coefficient") == 4
+    assert find_row(EQUATION_ROWS, "not", "present") == -1
+
+
 def _main() -> int:
     tests = [(n, o) for n, o in sorted(globals().items())
              if n.startswith("test_") and callable(o)]

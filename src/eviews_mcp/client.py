@@ -22,6 +22,11 @@ import uuid
 from typing import Any, Iterable, Sequence
 
 from .render import render_series_columns, render_table, to_csv
+from .results import (
+    coefficient_block,
+    stat_pairs,
+    unit_root_block,
+)
 from .session import EViewsError, EViewsSession, session
 
 __all__ = ["EViews", "EViewsError"]
@@ -380,6 +385,173 @@ class EViews:
                 except EViewsError:
                     break
         return info
+
+    # -- structured results --------------------------------------------------
+
+    def coefficients(self, equation: str) -> list[dict]:
+        """Estimated coefficients as a list of dictionaries.
+
+        Each entry carries ``variable``, ``coefficient``, ``std_error``,
+        ``t_stat`` and ``p_value`` at full precision -- the numbers rather than
+        the layout, for building your own tables.
+        """
+        found = coefficient_block(self.table(equation))
+        if not found:
+            raise EViewsError(
+                "No coefficient block found in '%s'. Is it an estimated "
+                "object?" % equation)
+        return found
+
+    def fit(self, equation: str) -> dict:
+        """Summary statistics beneath an estimation: R-squared, AIC, DW, ..."""
+        stats = stat_pairs(self.table(equation))
+        if not stats:
+            raise EViewsError("No summary statistics found in '%s'." % equation)
+        return stats
+
+    def unit_root(self, series: str, options: str = "", max_diff: int = 2,
+                  alpha: float = 0.05) -> dict:
+        """Test a series for a unit root, differencing until it is stationary.
+
+        Runs the test on the levels and then on successive differences, and
+        reports the order of integration as the first difference at which the
+        unit root null is rejected.
+
+        ``options`` is passed through to the EViews view, so the default
+        augmented Dickey-Fuller test can be swapped for another -- ``"pp"`` for
+        Phillips-Perron, ``"kpss"`` for KPSS -- or given deterministics, as in
+        ``"adf, trend"``. Note that KPSS reverses the null, so the order
+        reported here does not apply to it.
+
+        The verdict is a mechanical reading of the p-values at ``alpha``. It is
+        not a substitute for looking at the series: structural breaks, seasonal
+        behaviour and short samples all mislead these tests.
+        """
+        name = series.strip()
+        steps: list[dict] = []
+        order: int | None = None
+
+        for d in range(0, max(0, max_diff) + 1):
+            parts = [options.strip()] if options.strip() else []
+            if d:
+                parts.append("dif=%d" % d)
+            view = "uroot(%s)" % ", ".join(parts) if parts else "uroot"
+
+            block = unit_root_block(self.table(name, view))
+            probability = block.get("p_value")
+            rejected = probability is not None and probability < alpha
+            block.update({
+                "difference": d,
+                "view": view,
+                "stationary": rejected,
+            })
+            steps.append(block)
+            if rejected:
+                order = d
+                break
+
+        return {
+            "series": name.upper(),
+            "alpha": alpha,
+            "steps": steps,
+            "order_of_integration": order,
+            "conclusion": (
+                "I(%d)" % order if order is not None
+                else "no rejection through %d difference(s)" % max_diff),
+        }
+
+    def diagnose(self, equation: str, lags: int = 2, alpha: float = 0.05) -> dict:
+        """Run the standard post-estimation battery and report each outcome.
+
+        Covers residual serial correlation (Breusch-Godfrey), heteroskedasticity
+        (White) and normality (Jarque-Bera), alongside the fit statistics. Each
+        test reports its statistic, p-value, and whether its null is rejected at
+        ``alpha``.
+
+        Every number comes from EViews. The wording attached to each result is
+        only a reading of the p-value, and passing a battery does not make a
+        specification correct.
+        """
+        name = equation.strip()
+        report: dict[str, Any] = {"equation": name.upper(), "alpha": alpha,
+                                  "tests": [], "skipped": [], "fit": {}}
+
+        try:
+            report["fit"] = self.fit(name)
+        except EViewsError:
+            report["fit"] = {}
+
+        def record(label: str, null: str, stats: dict, stat_key: str,
+                   prob_key: str, when_rejected: str, when_not: str) -> None:
+            statistic = stats.get(stat_key)
+            probability = None
+            for key, value in stats.items():
+                if key.lower().startswith(prob_key.lower()):
+                    probability = value
+                    break
+            if statistic is None or probability is None:
+                return
+            rejected = probability < alpha
+            report["tests"].append({
+                "test": label,
+                "null": null,
+                "statistic": statistic,
+                "p_value": probability,
+                "rejected": rejected,
+                "reading": when_rejected if rejected else when_not,
+            })
+
+        def skip(label: str, exc: BaseException) -> None:
+            report["skipped"].append({"test": label, "reason": str(exc)})
+
+        try:
+            record("Breusch-Godfrey serial correlation",
+                   "no serial correlation up to %d lags" % lags,
+                   stat_pairs(self.table(name, "auto(%d)" % lags)),
+                   "F-statistic", "Prob. F",
+                   "serial correlation present; standard errors are unreliable",
+                   "no evidence of serial correlation")
+        except EViewsError as exc:
+            skip("Breusch-Godfrey serial correlation", exc)
+
+        try:
+            record("White heteroskedasticity",
+                   "homoskedasticity",
+                   stat_pairs(self.table(name, "white")),
+                   "F-statistic", "Prob. F",
+                   "heteroskedasticity present; consider robust standard errors",
+                   "no evidence of heteroskedasticity")
+        except EViewsError as exc:
+            skip("White heteroskedasticity", exc)
+
+        helper = _HELPER_PREFIX + uuid.uuid4().hex[:6]
+        try:
+            self._session.run("%s.makeresid %s" % (name, helper))
+            stats = stat_pairs(self.table(helper, "stats"))
+            record("Jarque-Bera normality", "residuals are normal", stats,
+                   "Jarque-Bera", "Probability",
+                   "residuals depart from normality",
+                   "no evidence against normal residuals")
+        except EViewsError as exc:
+            skip("Jarque-Bera normality", exc)
+        finally:
+            self._quiet_delete(helper)
+
+        failures = [t["test"] for t in report["tests"] if t["rejected"]]
+        ran = len(report["tests"])
+        if failures:
+            summary = ("%d of %d diagnostics reject: %s."
+                       % (len(failures), ran, ", ".join(failures)))
+        elif ran:
+            summary = "All %d diagnostics pass at the %g level." % (ran, alpha)
+        else:
+            summary = "No diagnostics could be run."
+        if report["skipped"]:
+            summary += (" %d could not be run: %s."
+                        % (len(report["skipped"]),
+                           ", ".join(s["test"] for s in report["skipped"])))
+        report["summary"] = summary
+        return report
 
     # -- data ---------------------------------------------------------------
 

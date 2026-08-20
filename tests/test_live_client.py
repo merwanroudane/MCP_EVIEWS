@@ -183,6 +183,68 @@ try:
 except EViewsError:
     check("invalid view still raises", True)
 
+print("\n== structured results ==")
+ev.create_workfile("q", "1996q1", "2020q4", name="struct")
+ev.run("""
+rndseed 5
+series kk = @cumsum(@nrnd)/20 + 6
+series ll = @cumsum(@nrnd)/40 + 4.5
+series yy = 1.2 + 0.55*kk + 0.35*ll + 0.03*@nrnd
+equation e_s.ls yy c kk ll
+""")
+
+coefs = ev.coefficients("e_s")
+check("coefficients returns one row per regressor", len(coefs) == 3, coefs)
+names = [c["variable"] for c in coefs]
+check("coefficients names the regressors", names == ["C", "KK", "LL"], names)
+kk = [c for c in coefs if c["variable"] == "KK"][0]
+check("coefficient recovers the true slope", abs(kk["coefficient"] - 0.55) < 0.06,
+      kk["coefficient"])
+check("coefficient carries std error, t and p",
+      all(k in kk for k in ("std_error", "t_stat", "p_value")), kk)
+check("coefficients keep full precision", len(repr(kk["coefficient"])) > 10,
+      kk["coefficient"])
+check("summary statistics are not read as regressors",
+      "R-squared" not in names, names)
+
+fit = ev.fit("e_s")
+check("fit reports R-squared", 0.0 <= fit.get("R-squared", -1) <= 1.0,
+      fit.get("R-squared"))
+check("fit reports Durbin-Watson", "Durbin-Watson stat" in fit, sorted(fit)[:6])
+
+print("\n== unit root verdicts ==")
+ur = ev.unit_root("kk")
+check("random walk is not stationary in levels",
+      ur["steps"][0]["stationary"] is False, ur["steps"][0])
+check("random walk is I(1)", ur["order_of_integration"] == 1, ur["conclusion"])
+check("unit root records critical values",
+      bool(ur["steps"][0]["critical_values"]), ur["steps"][0]["critical_values"])
+
+ev.run("series wn = @nrnd")
+ur0 = ev.unit_root("wn")
+check("white noise is I(0)", ur0["order_of_integration"] == 0, ur0["conclusion"])
+
+print("\n== diagnostics ==")
+good = ev.diagnose("e_s")
+check("diagnose runs three tests", len(good["tests"]) == 3,
+      [d["test"] for d in good["tests"]])
+check("well-specified model passes",
+      all(not d["rejected"] for d in good["tests"]), good["summary"])
+check("diagnose reports fit alongside", "R-squared" in good["fit"])
+
+ev.run("equation e_bad.ls yy c")
+bad = ev.diagnose("e_bad")
+check("misspecified model is flagged",
+      any(d["rejected"] for d in bad["tests"]), bad["summary"])
+serial = [d for d in bad["tests"] if "serial" in d["test"].lower()]
+check("serial correlation detected in the bad model",
+      bool(serial) and serial[0]["rejected"], bad["summary"])
+check("tests that cannot run are reported, not dropped",
+      isinstance(bad["skipped"], list), bad.get("skipped"))
+check("summary mentions anything skipped",
+      ("could not be run" in bad["summary"]) == bool(bad["skipped"]),
+      bad["summary"])
+
 print("\n== errors are informative ==")
 try:
     ev.run("series ok = 1\nbroken_command_here\n")

@@ -295,6 +295,7 @@
   .grp.g3 { --g-soft: var(--s3-soft); --g-ink: var(--s3-ink); --g-line: var(--s3-line); }
   .grp.g4 { --g-soft: var(--s4-soft); --g-ink: var(--s4-ink); --g-line: var(--s4-line); }
   .grp.g5 { --g-soft: var(--s5-soft); --g-ink: var(--s5-ink); --g-line: var(--s5-line); }
+  .grp.g6 { --g-soft: var(--s6-soft); --g-ink: var(--s6-ink); --g-line: var(--s6-line); }
 
   /* ---------- plot gallery ---------- */
   .gallery {
@@ -439,7 +440,7 @@
       <span class="pill"><b>Python</b> 3.10+</span>
       <span class="pill"><b>Platform</b> Windows</span>
       <span class="pill"><b>EViews</b> 10–14</span>
-      <span class="pill"><b>Tests</b> 84 passing</span>
+      <span class="pill"><b>Tests</b> 110 passing</span>
     </div>
 
     <div class="cta">
@@ -887,7 +888,7 @@ Lag   AC           PAC          Q-Stat     Prob
     <div class="sec-head prose">
       <h2>Tool reference</h2>
       <p>
-        The twenty tools an assistant has available. You never name them yourself — you ask in
+        The twenty-three tools an assistant has available. You never name them yourself — you ask in
         words — but knowing the vocabulary helps you ask precisely.
       </p>
     </div>
@@ -919,6 +920,11 @@ Lag   AC           PAC          Q-Stat     Prob
           <tr><td><code>show</code></td><td><b>Renders any object or view as text.</b> This is how results are read.</td></tr>
           <tr><td><code>evaluate</code></td><td>One value from an expression, e.g. <code>eq1.@r2</code>.</td></tr>
           <tr><td><code>describe_object</code></td><td>Object type, plus summary statistics for a series.</td></tr>
+
+          <tr class="grp g6"><td colspan="2">Analysis</td></tr>
+          <tr><td><code>equation_coefficients</code></td><td>Coefficients as a clean table of numbers, for reasoning about rather than reading.</td></tr>
+          <tr><td><code>unit_root</code></td><td>Tests the levels then successive differences, and reports the order of integration.</td></tr>
+          <tr><td><code>diagnose_equation</code></td><td>Breusch-Godfrey, White and Jarque-Bera in one call, each with its verdict.</td></tr>
 
           <tr class="grp g5"><td colspan="2">Data</td></tr>
           <tr><td><code>read_data</code></td><td>Series as an aligned table or full-precision CSV.</td></tr>

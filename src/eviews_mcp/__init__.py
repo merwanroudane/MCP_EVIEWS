@@ -24,7 +24,7 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __author__ = "Merwan Roudane"
 __all__ = ["EViews", "EViewsError", "EViewsSession", "connect", "__version__"]
 
