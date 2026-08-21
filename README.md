@@ -332,7 +332,7 @@ because they surprise people writing COM code directly.
 ```bash
 python tests/test_offline.py        # 27 tests, no EViews needed
 python tests/test_live.py           # 25 tests, drives the MCP tool layer
-python tests/test_live_client.py    # 58 tests, drives the library API
+python tests/test_live_client.py    # 62 tests, drives the library API
 ```
 
 `pytest` runs the offline suite by default; the live suites are opt-in because
