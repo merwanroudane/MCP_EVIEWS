@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.0
+
+### Changed
+- The server now runs on either line of the MCP SDK. 2.0 renamed `FastMCP` to
+  `MCPServer` and moved the module, so 1.3.3 pinned the requirement below 2.0
+  as the SDK's own migration guide advises. A guarded import covers both names
+  -- the decorators and handler signatures are unchanged between them -- so the
+  upper bound is lifted and installs resolve to whichever line is current.
+
+  Exercised over stdio against both 1.29.0 and 2.0.0, not merely imported:
+  initialize, tools/list returning all 24 tools, and a tools/call that reached
+  a live EViews session.
+
 ## 1.3.4
 
 ### Fixed

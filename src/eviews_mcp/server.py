@@ -19,12 +19,18 @@ from __future__ import annotations
 import functools
 from typing import Any, Callable
 
-from mcp.server.fastmcp import FastMCP
+try:
+    # SDK 2.x renamed FastMCP to MCPServer and moved the module. Only the name
+    # changed: the decorators and handler signatures are the same, so this one
+    # import covers both release lines.
+    from mcp.server.mcpserver import MCPServer as _Server
+except ImportError:  # SDK 1.x
+    from mcp.server.fastmcp import FastMCP as _Server
 
 from .client import EViews
 from .session import EViewsError
 
-mcp = FastMCP("eviews-mcp")
+mcp = _Server("eviews-mcp")
 
 _CLIENT: EViews | None = None
 
