@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.4.1
+
+### Added
+- `EVIEWS_REQUIRE_VERSION` refuses to connect unless EViews reports the major
+  version asked for, and `EVIEWS_PROGID` forces a single ProgID.
+
+  A machine with several EViews installations is not unusual, and only one of
+  them may work. `EViews.Manager` resolves to whichever version registered
+  itself last, so an update or opening another version once is enough to switch
+  the server silently onto an installation that does not work. Pinning by
+  ProgID often cannot help, because the numbered names such as
+  `EViews13.Manager` are frequently not registered at all -- verified on a
+  machine carrying 12, 13 and 14 where all three numbered names were absent and
+  only the generic one resolved. The version is therefore checked after
+  connecting, and a mismatch says which version was found and which was asked
+  for.
+
+### Fixed
+- The ProgID fallback list claimed to be newest-first but placed 13 ahead of 14.
+
 ## 1.4.0
 
 ### Changed

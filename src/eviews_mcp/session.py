@@ -14,6 +14,7 @@ EViews instance it created shuts down with it.
 from __future__ import annotations
 
 import atexit
+import os
 import pathlib
 import queue
 import tempfile
@@ -41,14 +42,37 @@ SERIES_AUTO = 0
 WRITE_UPDATE = 0
 WRITE_OVERWRITE = 1
 
-# Newest first. "EViews.Manager" resolves to the highest installed version.
+# "EViews.Manager" resolves to whichever version registered itself last, which
+# is usually the newest. The numbered ProgIDs are tried afterwards and are
+# frequently absent -- several EViews installations register only the generic
+# one -- so they are a fallback, not a reliable way to select a version.
 PROGIDS = [
     "EViews.Manager",
-    "EViews13.Manager",
     "EViews14.Manager",
+    "EViews13.Manager",
     "EViews12.Manager",
     "EViews11.Manager",
 ]
+
+#: Set EVIEWS_PROGID to use exactly one ProgID and skip the list above.
+PROGID_ENV = "EVIEWS_PROGID"
+
+#: Set EVIEWS_REQUIRE_VERSION to a major version, e.g. "13", to refuse any
+#: other. Use this when a machine has several installations and only one of
+#: them works: pinning by ProgID often cannot help, because the numbered names
+#: may not be registered, so the version is checked after connecting instead.
+VERSION_ENV = "EVIEWS_REQUIRE_VERSION"
+
+
+def wanted_progids() -> list[str]:
+    """The ProgIDs to try, honouring EVIEWS_PROGID when it is set."""
+    pinned = os.environ.get(PROGID_ENV, "").strip()
+    return [pinned] if pinned else list(PROGIDS)
+
+
+def required_major() -> str:
+    """The major version this machine insists on, or an empty string."""
+    return os.environ.get(VERSION_ENV, "").strip().split(".")[0]
 
 
 class EViewsError(RuntimeError):
@@ -156,7 +180,8 @@ class EViewsSession:
     def _connect_impl(self, prefer_existing: bool, visible: bool) -> Any:
         create = CREATE_EXISTING_OR_NEW if prefer_existing else CREATE_NEW
         errors = []
-        for progid in PROGIDS:
+        required = required_major()
+        for progid in wanted_progids():
             try:
                 manager = win32com.client.Dispatch(progid)
             except Exception as exc:
@@ -167,6 +192,18 @@ class EViewsSession:
             except Exception as exc:
                 errors.append("%s.GetApplication: %s" % (progid, com_message(exc)))
                 continue
+            if required:
+                try:
+                    found = str(app.Get("=@vernum", NA_AS_EMPTY, "NA")).split(".")[0]
+                except Exception as exc:
+                    errors.append("%s: version check failed: %s"
+                                  % (progid, com_message(exc)))
+                    continue
+                if found != required:
+                    errors.append(
+                        "%s is EViews %s, but %s asks for %s"
+                        % (progid, found, VERSION_ENV, required))
+                    continue
             self._progid = progid
             if visible:
                 try:
