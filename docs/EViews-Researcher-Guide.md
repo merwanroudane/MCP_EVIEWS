@@ -724,6 +724,11 @@ Python is not on your PATH. Reinstall and tick *"Add python.exe to PATH"*, or us
 **`'eviews-mcp' is not recognized`**
 The install did not add its script directory to PATH. Find it with `where eviews-mcp` and use the full path in your config file.
 
+**`ModuleNotFoundError: No module named 'mcp.server.fastmcp'`**
+The installed version is older than 1.3.3 and pulled in an incompatible MCP SDK.
+Upgrade, bypassing pip's cache in case it still lists the older release:
+`pip install --upgrade --no-cache-dir "eviews-mcp[pandas]"`
+
 **`NOT CONNECTED to EViews`**
 Open EViews manually once and let it fully load — first launch may need to register its automation interface. Then retry. If EViews has never been opened since installation, do that first.
 

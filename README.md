@@ -269,6 +269,34 @@ Results are not echoed by `run_eviews_code`, because EViews sends program
 output to its own log window where COM cannot reach it. Estimate into a named
 object and call `show` on it.
 
+## Troubleshooting
+
+### If the server will not start
+
+A version before 1.3.3 could install the MCP SDK 2.x, which removed the module
+this server is built on. The symptom is the same every time:
+
+```text
+ModuleNotFoundError: No module named 'mcp.server.fastmcp'
+```
+
+1.3.3 pins the SDK below 2.0. Upgrading fixes it -- but pip may serve a cached
+index that predates the release, so bypass the cache:
+
+```bash
+pip install --upgrade --no-cache-dir "eviews-mcp[pandas]"
+```
+
+Confirm the server itself imports, not just the package. The package imports
+lazily and succeeds even when the SDK is unusable, so checking it proves
+nothing:
+
+```bash
+python -c "import eviews_mcp.server as s; print(len(s.mcp._tool_manager.list_tools()), 'tools')"
+```
+
+Twenty-four tools means the install is healthy.
+
 ## Behaviour worth knowing
 
 These are EViews characteristics that the library handles for you, documented

@@ -1090,6 +1090,16 @@ in MCP_77B699157F3B.PRG on line 2.</pre>
       </table>
     </div>
 
+    <div class="note" style="margin-top:1.5rem">
+      <b>If the server will not start.</b> A version before 1.3.3 could install
+      MCP SDK 2.x, which removed the module this server is built on, and fails with
+      <code>ModuleNotFoundError: No module named 'mcp.server.fastmcp'</code>.
+      Upgrade with <code>pip install --upgrade --no-cache-dir "eviews-mcp[pandas]"</code>,
+      then check the server rather than the package:
+      <code>python -c "import eviews_mcp.server"</code>. The package imports lazily
+      and succeeds even when the SDK is unusable, so checking it proves nothing.
+    </div>
+
     <div class="note rose" style="margin-top:1.5rem">
       <b>The five-second habit that catches most of these:</b> read the four header lines on every
       EViews output — dependent variable, method, sample, included observations.
