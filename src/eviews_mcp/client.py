@@ -63,6 +63,19 @@ def _quote_path(path: Any) -> str:
     return _quote(pathlib.Path(path).expanduser().resolve())
 
 
+def _quote_dest(path: Any) -> str:
+    """Quote a path to write to, creating its folder if it is missing.
+
+    EViews will not create a directory on the way to a file: it stops with
+    "Path ... does not exist". Since the caller asking to save into
+    ``reports/figures/fit.png`` plainly means for the file to end up there,
+    the folder is made first.
+    """
+    target = pathlib.Path(path).expanduser().resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    return _quote(target)
+
+
 class EViews:
     """A live EViews application.
 
@@ -169,7 +182,7 @@ class EViews:
 
     def save_workfile(self, path: str | pathlib.Path | None = None) -> None:
         if path:
-            self._session.run("wfsave %s" % _quote_path(path))
+            self._session.run("wfsave %s" % _quote_dest(path))
         else:
             self._session.run("wfsave")
 
@@ -756,7 +769,7 @@ class EViews:
             raise ValueError("Provide at least one series name.")
         self._session.run("wfsave%s %s @keep %s" % (
             "(%s)" % options.strip() if options.strip() else "",
-            _quote_path(path), " ".join(wanted)))
+            _quote_dest(path), " ".join(wanted)))
 
     def export_object(self, object_name: str, path: str | pathlib.Path,
                       view: str = "", file_format: str = "") -> pathlib.Path:
@@ -770,6 +783,7 @@ class EViews:
         Table formats: csv, rtf, txt, html, tex.
         """
         target = pathlib.Path(path).expanduser().resolve()
+        target.parent.mkdir(parents=True, exist_ok=True)
         fmt = (file_format or target.suffix.lstrip(".")).lower()
         if fmt in ("jpeg",):
             fmt = "jpg"

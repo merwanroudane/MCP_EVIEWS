@@ -183,6 +183,31 @@ try:
 except EViewsError:
     check("invalid view still raises", True)
 
+print("\n== writing into a folder that does not exist yet ==")
+import shutil as _shutil
+
+deep_root = pathlib.Path("C:/ev_mcp/mkdir_test")
+if deep_root.exists():
+    _shutil.rmtree(deep_root)
+
+csv_target = deep_root / "a" / "b" / "series.csv"
+png_target = deep_root / "c" / "d" / "plot.png"
+wf_target = deep_root / "e" / "f" / "study.wf1"
+check("the folders really are absent to begin with", not csv_target.parent.exists())
+
+ev.export_data("a b", str(csv_target))
+check("export_data creates its folder", csv_target.exists(), csv_target)
+
+ev.run("graph gr_mkdir.line a b")
+ev.export_object("gr_mkdir", str(png_target))
+check("export_object creates its folder", png_target.exists(), png_target)
+
+ev.save_workfile(str(wf_target))
+check("save_workfile creates its folder", wf_target.exists(), wf_target)
+
+if deep_root.exists():
+    _shutil.rmtree(deep_root, ignore_errors=True)
+
 print("\n== structured results ==")
 ev.create_workfile("q", "1996q1", "2020q4", name="struct")
 ev.run("""

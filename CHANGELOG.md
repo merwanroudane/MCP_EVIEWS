@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.4
+
+### Fixed
+- Saving into a folder that does not exist yet failed with EViews' own
+  "Path ... does not exist" rather than creating it. Exporting a figure to
+  `reports/figures/fit.png` plainly means the file should end up there, so
+  `export_data`, `export_object` and `save_workfile` now create the folder on
+  the way. Found while bridging data between EViews, Stata and R, where the
+  natural move is to export into a fresh directory.
+
 ## 1.3.3
 
 ### Fixed
