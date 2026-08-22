@@ -225,12 +225,31 @@ class EViewsSession:
             self._visible = want_visible
             return self._app
 
+    def _invoke(self, member: str, *args: Any) -> Any:
+        """Call one method on the application, resolving it on the COM thread.
+
+        EViews is late-bound, so `app.Run` is not a plain attribute lookup: it
+        asks the object for the id of that name, which is a call into COM. The
+        object belongs to the apartment thread created below, and pywin32 312
+        refuses that ask from any other thread -- reporting it as a missing
+        attribute, so what surfaces is a bare "GetApplication.Run" with no hint
+        that threading is involved at all. Resolving the name inside the call
+        keeps every touch of the object on the thread that owns it.
+
+        pywin32 311 tolerated the older form, which is why this went unnoticed
+        for so long: the same code works or fails depending on which build of
+        pywin32 happens to be installed.
+        """
+        app = self.app()
+        return self._com.call(lambda: getattr(app, member)(*args))
+
     def _alive(self) -> bool:
         if self._app is None:
             return False
         try:
             # Cheap round trip that does not need a workfile to be open.
-            self._com.call(self._app.Get, "=1", NA_AS_EMPTY, "NA")
+            app = self._app
+            self._com.call(lambda: app.Get("=1", NA_AS_EMPTY, "NA"))
             return True
         except Exception:
             self._app = None
@@ -254,7 +273,7 @@ class EViewsSession:
     def set_visible(self, visible: bool) -> None:
         app = self.app()
         self._visible = visible
-        self._com.call(app.Show if visible else app.Hide)
+        self._com.call(lambda: (app.Show() if visible else app.Hide()))
 
     @property
     def progid(self) -> str | None:
@@ -264,24 +283,21 @@ class EViewsSession:
 
     def run(self, command: str) -> None:
         """Execute one EViews command line, raising EViewsError on failure."""
-        app = self.app()
         try:
-            self._com.call(app.Run, command)
+            self._invoke("Run", command)
         except Exception as exc:
             raise EViewsError(com_message(exc)) from None
 
     def get(self, expression: str, na_as_string: bool = False) -> Any:
-        app = self.app()
         na = NA_AS_STRING if na_as_string else NA_AS_EMPTY
         try:
-            return self._com.call(app.Get, expression, na, "NA")
+            return self._invoke("Get", expression, na, "NA")
         except Exception as exc:
             raise EViewsError(com_message(exc)) from None
 
     def lookup(self, pattern: str = "*", type_filter: str = "") -> tuple:
-        app = self.app()
         try:
-            result = self._com.call(app.Lookup, pattern, type_filter, LOOKUP_ARRAY)
+            result = self._invoke("Lookup", pattern, type_filter, LOOKUP_ARRAY)
         except Exception as exc:
             raise EViewsError(com_message(exc)) from None
         if result is None:
@@ -291,36 +307,32 @@ class EViewsSession:
         return tuple(result)
 
     def get_series(self, name: str, sample: str = "") -> tuple:
-        app = self.app()
         try:
-            return self._com.call(app.GetSeries, name, sample, NA_AS_EMPTY, "NA")
+            return self._invoke("GetSeries", name, sample, NA_AS_EMPTY, "NA")
         except Exception as exc:
             raise EViewsError(com_message(exc)) from None
 
     def get_group(self, names: str, sample: str = "") -> tuple:
-        app = self.app()
         try:
-            return self._com.call(app.GetGroup, names, sample, NA_AS_EMPTY, "NA")
+            return self._invoke("GetGroup", names, sample, NA_AS_EMPTY, "NA")
         except Exception as exc:
             raise EViewsError(com_message(exc)) from None
 
     def put_series(
         self, name: str, values: list, sample: str = "", overwrite: bool = True
     ) -> None:
-        app = self.app()
         write = WRITE_OVERWRITE if overwrite else WRITE_UPDATE
         try:
-            self._com.call(app.PutSeries, name, values, sample, SERIES_AUTO, write)
+            self._invoke("PutSeries", name, values, sample, SERIES_AUTO, write)
         except Exception as exc:
             raise EViewsError(com_message(exc)) from None
 
     def put_group(
         self, names: str, rows: list, sample: str = "", overwrite: bool = True
     ) -> None:
-        app = self.app()
         write = WRITE_OVERWRITE if overwrite else WRITE_UPDATE
         try:
-            self._com.call(app.PutGroup, names, rows, sample, SERIES_AUTO, write)
+            self._invoke("PutGroup", names, rows, sample, SERIES_AUTO, write)
         except Exception as exc:
             raise EViewsError(com_message(exc)) from None
 
